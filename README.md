@@ -4,6 +4,8 @@
 
 <p align="center">See Claude's edits on your page as they happen. A plugin for Claude Code.</p>
 
+<p align="center"><a href="https://www.claudepluginhub.com/plugins/mymotomaker-ai-editlens?ref=badge"><img src="https://www.claudepluginhub.com/badge/mymotomaker-ai-editlens" alt="Listed on ClaudePluginHub"></a></p>
+
 ![Claude edits a page: each change is highlighted, the code view types it out, and two agents work at the same time](docs/editlens-demo.gif)
 
 ## What it does
