@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trailhead Coffee</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#">Trailhead Coffee</a>
+    <nav class="nav">
+      <a href="#menu">Menu</a>
+      <a href="#visit">Visit</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <h1 class="hero-title">Coffee for your walk</h1>
+      <p class="hero-copy">Small-batch roasts, brewed slowly, served near the bottom of the hill.</p>
+      <a class="button" href="#menu">See the menu</a>
+    </section>
+
+    <section id="menu" class="menu">
+      <h2>Menu</h2>
+      <ul class="menu-list">
+        <li class="menu-item">Loading…</li>
+      </ul>
+    </section>
+
+    <section id="visit" class="visit">
+      <h2>Visit</h2>
+      <p>Open daily from 7am to 4pm, 12 Ridge Road.</p>
+    </section>
+  </main>
+
+  <!-- Load EditLens before your app code so it can see which API calls fill the page. server.js
+       sets data-root to this project's folder. -->
+  <!-- editlens:start -->
+  <script src="http://127.0.0.1:4317/live.js" data-root=""></script>
+  <!-- editlens:end -->
+  <script src="app.js"></script>
+</body>
+</html>

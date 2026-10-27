@@ -1,0 +1,12 @@
+body { margin: 0; font: 15px/1.5 system-ui, sans-serif; background: #f4f5f7; color: #1d2433; }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 28px; background: #fff; border-bottom: 1px solid #e3e6ec; }
+.logo { font-weight: 700; }
+.topbar nav a { margin-left: 18px; color: #5b6476; text-decoration: none; }
+.content { padding: 28px; max-width: 900px; }
+.page-title { margin: 0 0 20px; font-size: 28px; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.stat-card { background: #fff; border: 1px solid #e3e6ec; border-radius: 10px; padding: 16px; }
+.stat-label { color: #5b6476; font-size: 13px; }
+.stat-value { font-size: 26px; font-weight: 650; }
+.panel { margin-top: 20px; background: #fff; border: 1px solid #e3e6ec; border-radius: 10px; padding: 16px 20px; }
+.panel h2 { margin: 0 0 8px; font-size: 17px; }

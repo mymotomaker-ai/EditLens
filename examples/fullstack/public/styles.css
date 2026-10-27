@@ -1,0 +1,61 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font: 16px/1.6 system-ui, sans-serif;
+  color: #2b2a26;
+  background: #f6f3ec;
+}
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+}
+.brand {
+  font-weight: 700;
+  color: inherit;
+  text-decoration: none;
+}
+.nav a {
+  margin-left: 20px;
+  color: #5d5a52;
+  text-decoration: none;
+}
+.hero {
+  padding: 72px 32px 56px;
+  max-width: 760px;
+}
+.hero-title {
+  font-size: 44px;
+  line-height: 1.1;
+  margin: 0 0 16px;
+}
+.hero-copy {
+  font-size: 19px;
+  color: #5d5a52;
+  margin: 0 0 28px;
+}
+.button {
+  display: inline-block;
+  padding: 12px 20px;
+  border-radius: 8px;
+  background: #2b2a26;
+  color: #fff;
+  text-decoration: none;
+}
+.menu, .visit {
+  padding: 32px;
+  max-width: 760px;
+}
+.menu-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #ddd8cc;
+}
+.price { font-variant-numeric: tabular-nums; }

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "live-page": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/live-page.js"]
+    }
+  }
+}

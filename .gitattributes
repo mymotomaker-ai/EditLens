@@ -1,0 +1,5 @@
+# Text files are checked out with LF line endings, also on Windows: scripts that start with
+# "#!/usr/bin/env node" fail with CRLF on Linux and macOS, and tests compare text with LF.
+* text=auto eol=lf
+*.png binary
+*.gif binary

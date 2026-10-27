@@ -1,0 +1,8 @@
+{
+  "name": "editlens-vite-router-example",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "vite" },
+  "dependencies": { "react": "^18.3.1", "react-dom": "^18.3.1", "react-router-dom": "^6.30.0" },
+  "devDependencies": { "vite": "^6.0.0", "@vitejs/plugin-react": "^4.3.0" }
+}

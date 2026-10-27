@@ -1,0 +1,14 @@
+{
+  "name": "editlens",
+  "owner": {
+    "name": "mymotomaker-ai"
+  },
+  "description": "See Claude's edits on your page as they happen.",
+  "plugins": [
+    {
+      "name": "editlens",
+      "source": "./",
+      "description": "See Claude's edits on your page as they happen."
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+name: test
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    # Linux only: some tests use symlinks and runuser. Node 18 is the oldest EditLens supports.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: git config --global user.email ci@example.com && git config --global user.name CI
+      - run: |
+          # npm test alone decides pass or fail. Its failing tests are also reported as annotations
+          # (readable without the full log): name, file and line, first line of the error.
+          # Not a terminal here, so node --test prints TAP on Node 18 and 22. bash -e is the default.
+          set +e
+          npm test 2>&1 | tee "$RUNNER_TEMP/npm-test.txt"
+          code=${PIPESTATUS[0]}
+          if [ "$code" -ne 0 ]; then
+            # A failed parent (failureType subtestsFailed) is skipped: its failing subtests have their own lines.
+            awk -v q="'" -v ws="$GITHUB_WORKSPACE/" '
+              function out(  msg, file, line) {
+                if (ft ~ /subtestsFailed/) return
+                msg = name (err != "" ? ": " err : "")
+                gsub(/%/, "%25", msg)
+                file = loc
+                line = ""
+                if (match(file, /:[0-9]+:[0-9]+$/)) {
+                  line = substr(file, RSTART + 1)
+                  sub(/:.*/, "", line)
+                  file = substr(file, 1, RSTART - 1)
+                }
+                if (index(file, ws) == 1) file = substr(file, length(ws) + 1)
+                print (file != "" ? "::error file=" file (line != "" ? ",line=" line : "") "::" : "::error::") substr(msg, 1, 300)
+              }
+              /^ *not ok [0-9]+ - / { name = $0; sub(/^ *not ok [0-9]+ - /, "", name); open = 1; want = 0; err = ""; loc = ""; ft = ""; next }
+              !open { next }
+              want { if (NF) { err = $0; sub(/^ +/, "", err); want = 0 } next }
+              /^ *location: / { loc = $0; sub(/^ *location: /, "", loc); gsub("[\"" q "]", "", loc); next }
+              /^ *failureType: / { ft = $0; next }
+              /^ *error: / { e = $0; sub(/^ *error: /, "", e); if (e ~ /^[|>]-?$/) want = 1; else { gsub("^[\"" q "]|[\"" q "]$", "", e); err = e } next }
+              /^ *\.\.\.$/ { out(); open = 0 }
+            ' "$RUNNER_TEMP/npm-test.txt" | head -20 > "$RUNNER_TEMP/npm-test-errors.txt"
+            # Not TAP after all (or nothing matched): the error lines, as the browser job does.
+            [ -s "$RUNNER_TEMP/npm-test-errors.txt" ] || grep -E "not ok|✖|Error" "$RUNNER_TEMP/npm-test.txt" | head -10 | cut -c1-300 | sed "s/^/::error::/" > "$RUNNER_TEMP/npm-test-errors.txt"
+            cat "$RUNNER_TEMP/npm-test-errors.txt"
+            echo "::error::npm test exited with $code"
+          fi
+          exit $code
+  mod:
+    # The mod (hooks/mod.mjs, test/mod.test.ts) in Claude Code's own test runner. It needs no login.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install -g @anthropic-ai/claude-code@2.1.296
+      - run: claude plugin test .
+  browser:
+    # Click-through tests of the page panel and code view in Chromium. Each script prints ok/FAIL lines and exits 1 on a failure.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: git config --global user.email ci@example.com && git config --global user.name CI
+      - run: npm install --no-save playwright@1.56.1 && npx playwright install --with-deps chromium
+      - env:
+          # Proxies take any free port instead of their steady one (4400-4899).
+          EDITLENS_STEADY_PORTS: 'off'
+        run: |
+          # Failures are also reported as annotations (readable without the full log). bash -e is the default here.
+          # The scripts are listed in test/browser-ci.js (test/ci.test.js checks that list against the test folder).
+          set +e
+          failed=0
+          for t in $(node -p "require('./test/browser-ci').run.join(' ')"); do
+            echo "== $t"
+            # A script that does not end in 10 minutes is stopped (exit code 124), and the next one runs.
+            timeout -k 10s 10m node test/$t.js "$RUNNER_TEMP/$t" > "$RUNNER_TEMP/$t.txt" 2>&1
+            code=$?
+            cat "$RUNNER_TEMP/$t.txt"
+            if [ $code -ne 0 ]; then
+              failed=1
+              grep -E "FAIL|Error|error" "$RUNNER_TEMP/$t.txt" | head -10 | cut -c1-300 | sed "s/^/::error::$t: /"
+              if [ $code -eq 124 ]; then echo "::error::$t did not end in 10 minutes"; else echo "::error::$t exited with $code"; fi
+            fi
+          done
+          exit $failed
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-screenshots
+          path: ${{ runner.temp }}

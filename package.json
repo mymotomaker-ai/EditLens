@@ -1,0 +1,16 @@
+{
+  "name": "editlens",
+  "version": "1.0.0",
+  "description": "Claude Code plugin: see Claude's edits on your page as they happen.",
+  "license": "MIT",
+  "type": "commonjs",
+  "engines": { "node": ">=18" },
+  "exports": {
+    "./integrations/vite.mjs": "./integrations/vite.mjs",
+    "./integrations/middleware": "./integrations/middleware.js"
+  },
+  "scripts": {
+    "server": "node server/server.js",
+    "test": "node test/run.js"
+  }
+}

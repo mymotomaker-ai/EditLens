@@ -1,0 +1,6 @@
+node_modules/
+examples/vite-react/node_modules/
+# Preview output given a URL by mistake (a folder named "http:" breaks Windows checkouts)
+http:/
+https:/
+*-out/
