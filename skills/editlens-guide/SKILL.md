@@ -143,7 +143,7 @@ default.
      or only `start_line`..`end_line`;
    - `list_computer_task_files` and `search_computer_task` (plain text, `glob`) check its claims
      without asking Claude there anything.
-   Keys and credential files (.env, *.pem, id_rsa, .npmrc, ...) are never sent or read.
+   Keys and credential files (.env, private keys, package registry logins, ...) are never sent or read.
 6. Get the changes back:
    - `"mine"` tasks: `apply_computer_task` writes the changed files into this project. A file is
      written only when it is still as it was sent; files changed here since are listed as

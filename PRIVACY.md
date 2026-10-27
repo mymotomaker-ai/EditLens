@@ -84,3 +84,5 @@ You can delete the state folder at any time. Uninstalling the plugin does not de
 ## Contact
 
 Questions: mymotomaker@gmail.com
+
+EditLens has no website or domain. The GitHub repository is the only official source.

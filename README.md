@@ -4,7 +4,7 @@
 
 <p align="center">See Claude's edits on your page as they happen. A plugin for Claude Code.</p>
 
-![The page, the EditLens panel, and the code view with Claude's edit](docs/screenshots/dock-light-6-tabs-with-panel.png)
+![Claude edits a page: each change is highlighted, the code view types it out, and two agents work at the same time](docs/editlens-demo.gif)
 
 ## What it does
 
@@ -88,9 +88,10 @@ All commands: [docs/commands.md](docs/commands.md).
 ## What EditLens runs and reads
 
 - **Session transcript.** Reads each Claude Code session's transcript file in `~/.claude/projects` to show the chat on the page.
-- **Hooks.** Send Claude's events (prompts, edits, tool steps, agents, permission questions) to the local server. They also add a short note to Claude's context at session start, in a git project run each editing subagent in its own worktree, and block Claude from calling EditLens's own approval addresses. They never answer permission questions.
+- **Hooks.** Send Claude's events (prompts, edits, tool steps, agents, permission questions) to the local server. They also add a short note to Claude's context at session start, in a git project run each editing subagent in its own worktree (the `PreToolUse` hook adds `isolation: "worktree"` to the subagent's call and approves nothing), and block Claude from calling EditLens's own approval addresses. They never answer permission questions.
 - **Local server.** `node server/server.js` listens on `127.0.0.1:4317`. Only when you ask, it opens an address for your dev server, the pairing port 4318, and, for a paired computer, a local port for its page and an `ssh` connection.
 - **Your app.** `/editlens` runs your project's own Vite with EditLens added, or serves a plain site's folder. It runs no other script of yours. It can open your browser.
+- **Claude Code panel.** `hooks/mod.mjs` draws the line above the prompt, the `/editlens` output, and the Settings pane. It talks only to the local server on `127.0.0.1`, with the server's key: it sends settings and finished tool calls, and asks for the summary. It changes only EditLens's own settings (`editlens.*`), when you change one in its Settings pane. It writes the session's port to `~/.claude/editlens/session-ports`. It runs `node bin/start.js` for `/editlens`, `node bin/serve.js` to start the server, and Claude Code's `/effort` when you press the effort button. It can put text in the prompt box but never sends it. It never answers permission questions and never changes Claude Code's permission mode.
 - **MCP server.** `node mcp/live-page.js` gives Claude 26 tools. Each tool states whether it only reads.
 - **git.** Adds and removes worktrees for subagents, and reads status, diffs, and history.
 - **npm.** The first time page control starts, it installs `@anthropic-ai/claude-agent-sdk` into `~/.claude/editlens`. Page control and tasks run Claude through it with your own Claude login. Sign-in uses `claude auth status` and `claude auth login`.
@@ -119,6 +120,8 @@ The server listens on `127.0.0.1` only and rejects requests from other hosts. De
 - Questions and bugs: [open an issue](https://github.com/mymotomaker-ai/editlens/issues/new/choose).
 - Security problems: report them privately, as [SECURITY.md](SECURITY.md) describes.
 - Email: mymotomaker@gmail.com
+
+EditLens has no website or domain. The GitHub repository is the only official source.
 
 ## Contributing
 

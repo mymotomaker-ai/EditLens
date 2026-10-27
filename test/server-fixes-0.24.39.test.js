@@ -254,6 +254,32 @@ test('L4: a match count that is not a whole number reads as 0 matches, with the 
   assert.match(text, /Targets with 0 matches were not shown/);
 });
 
+// Haiku sent { "target": "{ \"marker\": 1 }" } and was told "No usable targets".
+test('highlight_on_page reads "target", JSON text and one target without the list', async () => {
+  for (const args of [{ target: '{ "marker": 1 }' }, { targets: '[{"marker": 1}]' }, { targets: { marker: 1 } }, { target: { marker: 1 } }]) {
+    let sent = null;
+    const text = await mcpCall((req, res) => {
+      res.setHeader('content-type', 'application/json');
+      if (req.url === '/event') {
+        let body = '';
+        req.on('data', (d) => { body += d; });
+        req.on('end', () => { sent = JSON.parse(body); res.end('{"ok":true,"pages":1}'); });
+        return undefined;
+      }
+      if (req.url.startsWith('/report')) return res.end('[{"url":"http://x/","results":[{"target":"1","count":1}]}]');
+      res.statusCode = 404;
+      return res.end('{}');
+    }, 'highlight_on_page', args);
+    assert.deepStrictEqual(sent && sent.targets.map((t) => t.marker), [1], JSON.stringify(args));
+    assert.match(text, /1 match/, JSON.stringify(args));
+  }
+});
+
+test('highlight_on_page with no usable target shows the shape to send', async () => {
+  const text = await mcpCall((req, res) => res.end('{}'), 'highlight_on_page', { target: 'nothing' });
+  assert.match(text, /\{ "targets": \[\{ "marker": 2 \}\] \}/);
+});
+
 test('atomic: a link put at the temporary name does not get the data', () => {
   const dir = fs.mkdtempSync(path.join(base, 'atomic-'));
   const file = path.join(dir, 'data.json');

@@ -115,8 +115,8 @@ function ctxColor(pct) {
 // -> [filled, empty]
 export function meter(pct, size = 10) {
   const n = finite(pct)
-  const on = n === null ? 0 : Math.max(0, Math.min(size, Math.round((n / 100) * size)))
-  return ['━'.repeat(on), '─'.repeat(size - on)]
+  const filled = n === null ? 0 : Math.max(0, Math.min(size, Math.round((n / 100) * size)))
+  return ['━'.repeat(filled), '─'.repeat(size - filled)]
 }
 
 const MODE_COLORS = { default: 'permission', acceptEdits: 'autoAccept', plan: 'planMode', auto: 'autoAccept', dontAsk: 'warning', bypassPermissions: 'error' }
@@ -586,12 +586,43 @@ async function toolEnded($, e) {
   }
 }
 
+// One fixed key per setting: the plugin directory reads a settings change only when its key is
+// written out, so no key is built from text. -> Claude Code's answer, or null for an unknown key
+function configSet($, k, value) {
+  switch (k) {
+    case 'start': return $.config.set({ key: 'editlens.start', value })
+    case 'permission_mode': return $.config.set({ key: 'editlens.permission_mode', value })
+    case 'effort': return $.config.set({ key: 'editlens.effort', value })
+    case 'safety_check': return $.config.set({ key: 'editlens.safety_check', value })
+    case 'remote_tasks': return $.config.set({ key: 'editlens.remote_tasks', value })
+    case 'paired_answers': return $.config.set({ key: 'editlens.paired_answers', value })
+    case 'task_account': return $.config.set({ key: 'editlens.task_account', value })
+    case 'tasks_at_once': return $.config.set({ key: 'editlens.tasks_at_once', value })
+    case 'subagent_copies': return $.config.set({ key: 'editlens.subagent_copies', value })
+    case 'permission_glow': return $.config.set({ key: 'editlens.permission_glow', value })
+    case 'highlight': return $.config.set({ key: 'editlens.highlight', value })
+    case 'hover_code': return $.config.set({ key: 'editlens.hover_code', value })
+    case 'pick_box': return $.config.set({ key: 'editlens.pick_box', value })
+    case 'dictation': return $.config.set({ key: 'editlens.dictation', value })
+    case 'follow_page': return $.config.set({ key: 'editlens.follow_page', value })
+    case 'expand_code_view': return $.config.set({ key: 'editlens.expand_code_view', value })
+    case 'wait': return $.config.set({ key: 'editlens.wait', value })
+    case 'line_above_prompt': return $.config.set({ key: 'editlens.line_above_prompt', value })
+    case 'theme': return $.config.set({ key: 'editlens.theme', value })
+    case 'text_size': return $.config.set({ key: 'editlens.text_size', value })
+    case 'editor': return $.config.set({ key: 'editlens.editor', value })
+    case 'auto_connect': return $.config.set({ key: 'editlens.auto_connect', value })
+    case 'port': return $.config.set({ key: 'editlens.port', value })
+    default: return null
+  }
+}
+
 // Changes one setting in Claude Code (it saves it and reloads this file with the new value).
 async function setSetting($, k, value) {
   const field = schema[k]
   if (!field || settingValue(field, value) !== value) return 'That value does not fit.'
   try {
-    const out = await $.config.set({ key: $.plugin.name + '.' + k, value })
+    const out = await configSet($, k, value)
     return out && out.deny ? String(out.deny) : null
   } catch (err) {
     if (!(err instanceof Error)) throw err
@@ -727,9 +758,9 @@ export function withUsage(list, got, now) {
 
 // A meter record's plain line, as lib/say.js writes it.
 function meterPlain(r) {
-  const [on, rest] = meter(r.percent, 16)
+  const [filled, rest] = meter(r.percent, 16)
   const p = finite(r.percent)
-  return [String(r.label).padEnd(COLS.usage) + on + rest + '  ' + (p === null ? '' : fmtPct(p)).padStart(4) + (r.note ? '   ' + r.note : '')]
+  return [String(r.label).padEnd(COLS.usage) + filled + rest + '  ' + (p === null ? '' : fmtPct(p)).padStart(4) + (r.note ? '   ' + r.note : '')]
 }
 
 // The session's own numbers: exact from the start, with the window of the model chosen in Claude
@@ -797,7 +828,7 @@ async function refresh($, hold = false, { sends = true } = {}) {
 
 async function refreshOnce($, hold, sends) {
   const held = hold && seq !== null
-  let next = null
+  let summaryNext = null
   try {
     // The task account may only report edits; the server refuses it /summary.
     if ((await $.env.get('EDITLENS_TASK_ACCOUNT')) === '1') return
@@ -818,17 +849,17 @@ async function refreshOnce($, hold, sends) {
       (held ? '&since=' + seq + '&wait=' + WAIT_S : '')
     const key = await token($)
     const res = await $.http.fetch('http://127.0.0.1:' + port + '/summary' + q, key ? { headers: { 'x-editlens-token': key } } : undefined)
-    if (res.ok) next = JSON.parse(res.text)
+    if (res.ok) summaryNext = JSON.parse(res.text)
   } catch (err) {
     // Connection refused, a timeout or a broken response: the server isn't there (yet).
-    next = null
+    summaryNext = null
     if (!(err instanceof Error)) throw err
     debugOnce($, 'no answer from the live server', err)
   }
-  if (next === null || typeof next !== 'object') {
+  if (summaryNext === null || typeof summaryNext !== 'object') {
     pollFails++
     pollSkip = backoffTicks(pollFails)
-    // A long request failed: the next is a plain request, which shows whether the server is there.
+    // A long request failed: the next one is a plain request, which shows whether the server is there.
     // If long requests keep failing while plain ones work: back to the 2 s poll.
     if (held) {
       longFails++
@@ -842,15 +873,15 @@ async function refreshOnce($, hold, sends) {
   pollSkip = 0
   if (held) longFails = 0
   // A lower number than before means a restarted server: its answer is used like any other.
-  seq = seqOf(next.seq)
+  seq = seqOf(summaryNext.seq)
   // A new instance is a restarted server, which numbers its requests and notices from 1 again.
-  const inst = typeof next.instance === 'string' && next.instance ? next.instance : null
+  const inst = typeof summaryNext.instance === 'string' && summaryNext.instance ? summaryNext.instance : null
   if (inst !== null && instance !== null && inst !== instance) {
     forgetIds()
     reported = '' // the restarted server has no settings from before: report() sends them again
   }
   if (inst !== null) instance = inst
-  const { seq: _seq, changed: _changed, instance: _instance, ...body } = next
+  const { seq: _seq, changed: _changed, instance: _instance, ...body } = summaryNext
   raw = body
   local = await sessionLocal($)
   show($, withLocal(withPlugin(raw), local))
@@ -1100,11 +1131,11 @@ async function choosePort($, atStart) {
   portByEnv = strictInt(envPort, 1, 65535) !== null
   const inUse = portByEnv ? null : await startedPort($)
   const held = portByEnv ? null : inUse ?? (atStart ? null : await heldPort($))
-  const next = held ?? portFrom(envPort, current().port)
-  if (atStart && !portByEnv && inUse === null) await holdPort($, next)
-  if (next === port) return
+  const chosen = held ?? portFrom(envPort, current().port)
+  if (atStart && !portByEnv && inUse === null) await holdPort($, chosen)
+  if (chosen === port) return
   // Another server: its answers and ids start again.
-  port = next
+  port = chosen
   seq = null
   instance = null
   reported = ''
@@ -1366,7 +1397,7 @@ export function recordsFromText(text) {
     else if (/^\/editlens\b.* {2}·{1} {2}/.test(line)) out.push({ k: 'hint', items: line.split('  ·  ').map((h) => splitNote(h)), ...r })
     else if ((m = /^([●○]) (.*)$/.exec(line))) {
       const [name, note] = splitNote(m[2])
-      out.push({ k: 'item', mark: m[1] === '●' ? 'on' : null, name, ...(note ? { note } : {}), ...r })
+      out.push({ k: 'item', mark: m[1] === '●' ? 'live' : null, name, ...(note ? { note } : {}), ...r })
     } else out.push({ k: 'text', text: line, ...r })
   }
   // A short line over command rows is their group's title ("Everyday", "Info").
@@ -1462,11 +1493,11 @@ export function drawRecord(r, { Box, Text, Link }, key, cols) {
     }
     case 'meter': {
       const pct = finite(r.percent)
-      const [on, rest] = meter(pct, 16)
+      const [filled, rest] = meter(pct, 16)
       const hot = pct !== null && pct >= 80
       // The meter, then the percent right-aligned in a column of its own, then the note.
       return [columnRow({ Box, Text }, { key, label: r.label, labelWidth: COLS.usage, labelStyle: { dimColor: true }, value: [Box({ key: 'v', flexDirection: 'row', children: [
-        Text({ key: 'bar', wrap: 'truncate-end', children: [t(on, { color: hot ? 'error' : 'claude' }), t(rest, { dimColor: true })] }),
+        Text({ key: 'bar', wrap: 'truncate-end', children: [t(filled, { color: hot ? 'error' : 'claude' }), t(rest, { dimColor: true })] }),
         Box({ key: 'pct', width: 6, flexShrink: 0, justifyContent: 'flex-end', children: [t(pct === null ? '' : fmtPct(pct), hot ? { color: 'error' } : undefined)] }),
         ...(r.note ? [Text({ key: 'note', wrap: 'wrap', dimColor: true, children: ['   ' + r.note] })] : []),
       ] })] })]
@@ -1506,7 +1537,7 @@ export function drawRecord(r, { Box, Text, Link }, key, cols) {
     }
     case 'title': return [row([t(r.text || '', { dimColor: true })])]
     case 'item': {
-      const m = { ok: ['✓', 'success'], warn: ['!', 'warning'], on: ['●', 'success'], fail: ['✕', 'error'] }[r.mark] || [' ', undefined]
+      const m = { ok: ['✓', 'success'], warn: ['!', 'warning'], live: ['●', 'success'], fail: ['✕', 'error'] }[r.mark] || [' ', undefined]
       const w = Number.isInteger(r.width) && r.width > 0 ? r.width : 0
       // A name column of the item's width: real columns, as the desktop app's font is proportional.
       const name = Text({ key: 'n', bold: true, wrap: 'truncate-end', children: [String(r.name || '')] })
@@ -2146,6 +2177,11 @@ export function notTypedStop(args, kind) {
 
 // /editlens: runs bin/start.js with what was typed after it.
 async function editlensRun($, e) {
+  return answerEditlens($, e)
+}
+
+// The answer to /editlens, for both hooks below.
+async function answerEditlens($, e) {
   try {
     const kind = e && e.origin && e.origin.kind
     if (notTypedNew(e && e.args, kind)) return output([rec({ k: 'fail', what: 'Only you can make a starter page' }), rec({ k: 'fix', before: 'Type', cmd: '/editlens new', after: 'at the prompt yourself' })])
@@ -2170,7 +2206,7 @@ function editlensLate($, e, next) {
 // Claude doesn't run it as a Bash command. Other sessions (SDK, such as page control) get the skill.
 async function skillRun($, e, next) {
   const kind = e && e.origin && e.origin.kind
-  return kind === 'composer' || kind === 'bridge' ? editlensRun($, e) : next(e)
+  return kind === 'composer' || kind === 'bridge' ? answerEditlens($, e) : next(e)
 }
 
 // The skill is the one /editlens in the typeahead: listed with the command's own words.

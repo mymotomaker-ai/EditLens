@@ -11,7 +11,6 @@
   "repository": "https://github.com/mymotomaker-ai/editlens",
   "license": "MIT",
   "privacyPolicyUrl": "https://github.com/mymotomaker-ai/editlens/blob/main/PRIVACY.md",
-  "types": "./types/index.d.ts",
   "keywords": [
     "frontend",
     "live-preview",

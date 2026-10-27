@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const { sliceSafe } = require('../lib/textcut');
 const { writeAtomic } = require('../lib/atomic');
+const { listArg } = require('../lib/listarg');
 const crypto = require('crypto');
 
 const BOARD_PRUNE_MS = 90 * 86400000;
@@ -326,7 +327,7 @@ class Boards {
       case 'claim_task': {
         const text = clip(args.task, 400);
         if (!text) return { text: 'Describe the task you are claiming.', isError: true };
-        const files = Array.isArray(args.files) ? [...new Set(args.files.map((f) => clip(f, 300)).filter(Boolean))].slice(0, 30) : [];
+        const files = listArg(args.files) ? [...new Set(listArg(args.files).map((f) => clip(f, 300)).filter(Boolean))].slice(0, 30) : [];
         const fileKey = (f) => f.replace(/\\/g, '/').replace(/^\.\//, '').toLowerCase();
         const want = new Set(files.map(fileKey));
         const same = text.toLowerCase();

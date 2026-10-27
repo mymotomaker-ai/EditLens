@@ -40,7 +40,7 @@ test('Claude gets the source line, the component, the selector and how to point 
   assert.match(text, /selector #cart > button/);
   assert.match(text, /\[2\] <span> — rendered by src\/App\.jsx \(line unknown\)/);
   assert.match(text, /\[3\] Lines 11-16 of server\.js:\n```\nconst menu = \[\];\n```/);
-  assert.match(text, /highlight_on_page with a target like \{ "marker": 2 \}/);
+  assert.match(text, /highlight_on_page with \{ "targets": \[\{ "marker": 2 \}\] \}/);
   assert.strictEqual(formatAttachments([]), '');
 });
 

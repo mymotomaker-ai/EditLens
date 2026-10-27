@@ -7,6 +7,7 @@ const { PRODUCT_NAME } = require('../lib/name');
 const crypto = require('crypto');
 const path = require('path');
 const { related } = require('../lib/paths');
+const { listArg } = require('../lib/listarg');
 const readline = require('readline');
 const { postEvent, postJson, getJson, DOWN_CODES } = require('../lib/client');
 const { callKey, BOARD_TOOLS } = require('../server/board');
@@ -382,8 +383,7 @@ function sleep(ms) {
 }
 
 function cleanTargets(raw) {
-  if (!Array.isArray(raw)) return [];
-  return raw
+  return (listArg(raw) || [])
     .filter((t) => t && typeof t === 'object')
     .map((t) => ({
       marker: Number.isInteger(Number(t.marker)) && Number(t.marker) > 0 ? Number(t.marker) : undefined,
@@ -396,8 +396,8 @@ function cleanTargets(raw) {
 }
 
 async function highlight(args) {
-  const targets = cleanTargets(args.targets);
-  if (!targets.length) return { text: 'No usable targets: give each one a marker, a selector or text.', isError: true };
+  const targets = cleanTargets(args.targets === undefined ? args.target : args.targets);
+  if (!targets.length) return { text: 'No usable targets: give each one a marker, a selector or text, as a list: { "targets": [{ "marker": 2 }] }.', isError: true };
   const color = COLORS.includes(args.color) ? args.color : 'purple';
   const d = Number(args.duration_seconds);
   const duration = Number.isFinite(d) && d >= 0 ? Math.min(d, 600) : 20;
@@ -625,7 +625,8 @@ async function waitTasks(args) {
   // Just started following (after a restart): wait up to 5 s for the first state.
   if (!now.tasks.length) now = await getJson(`/remote/tasks?since=${now.seq}&wait=5`, 10000);
   const mineOf = (list) => list.filter((t) => !computer || String(t.computer || '').toLowerCase() === computer.toLowerCase());
-  const asked = Array.isArray(args.tasks) && args.tasks.length ? args.tasks.filter((x) => typeof x === 'string').map((x) => x.trim()).filter(Boolean) : null;
+  const askedList = listArg(args.tasks);
+  const asked = askedList && askedList.length ? askedList.filter((x) => typeof x === 'string').map((x) => x.trim()).filter(Boolean) : null;
   if (asked && !asked.length) return { text: 'Give "tasks" as task ids (text), from start_task_on_computer or list_computer_tasks.', isError: true };
   const start = new Map(mineOf(now.tasks).map((t) => [t.task, t]));
   // None of the given ids is known: say so now instead of waiting the whole time for them.
@@ -674,7 +675,7 @@ async function callTool(name, args) {
     case 'get_computer_task_changes':
       return remoteTask('changes', args, { task: taskId(args) });
     case 'get_computer_task_diff': {
-      const r = await linkFor(args)('diff', { task: taskId(args), paths: Array.isArray(args.paths) ? args.paths.filter((x) => typeof x === 'string').slice(0, 200) : undefined, offset: Number.isSafeInteger(Number(args.offset)) ? Number(args.offset) : 0 });
+      const r = await linkFor(args)('diff', { task: taskId(args), paths: listArg(args.paths) ? listArg(args.paths).filter((x) => typeof x === 'string').slice(0, 200) : undefined, offset: Number.isSafeInteger(Number(args.offset)) ? Number(args.offset) : 0 });
       if (r.error) return { text: r.error, isError: true };
       return { text: `${r.diff}${r.next !== null && r.next !== undefined ? `\n--- more: offset ${r.next} of ${r.size} ---` : ''}` };
     }
@@ -684,7 +685,7 @@ async function callTool(name, args) {
       return remoteTask('search', args, { task: taskId(args), text: typeof args.text === 'string' ? args.text : '', glob: typeof args.glob === 'string' ? args.glob : undefined, max: Number.isSafeInteger(Number(args.max)) ? Number(args.max) : undefined });
     case 'undo_computer_task_apply': {
       const dir = PROJECT_DIR;
-      const out = await remotework.undoApply({ stateDir: config.stateDir, apply: typeof args.apply === 'string' ? args.apply.trim() : '', files: Array.isArray(args.files) ? args.files.filter((f) => typeof f === 'string') : null,
+      const out = await remotework.undoApply({ stateDir: config.stateDir, apply: typeof args.apply === 'string' ? args.apply.trim() : '', files: listArg(args.files) ? listArg(args.files).filter((f) => typeof f === 'string') : null,
         onUndone: (f) => postJson('/remote/applied', { undo: true, dir, path: f.path, status: f.after === null ? 'deleted' : 'changed', intent: 'Undone: back as it was before the apply',
           binary: Boolean((f.before && !isText(f.before)) || (f.after && !isText(f.after))) || undefined,
           before: f.before ? fitBuf(f.before, 2 * 1024 * 1024) : '', after: f.after ? fitBuf(f.after, 512 * 1024) : '' }, { timeoutMs: 15000 }).catch((err) => process.stderr.write(`could not show ${f.path} on the page: ${err.message}\n`)) });
@@ -709,7 +710,7 @@ async function callTool(name, args) {
         // Same limits as the hooks: lib/snapshots keeps up to 512 KB, lib/backups up to 2 MB.
         before: f.before ? fitBuf(f.before, 2 * 1024 * 1024) : '', after: f.after ? fitBuf(f.after, 512 * 1024) : '',
       }, { timeoutMs: 15000 }).catch((err) => process.stderr.write(`could not show ${f.path} on the page: ${err.message}\n`));
-      const out = await remotework.applyTask(linkFor(args), { task, stateDir: config.stateDir, files: Array.isArray(args.files) ? args.files.filter((f) => typeof f === 'string').slice(0, 2000) : null, onApplied, dryRun: args.dry_run === true });
+      const out = await remotework.applyTask(linkFor(args), { task, stateDir: config.stateDir, files: listArg(args.files) ? listArg(args.files).filter((f) => typeof f === 'string').slice(0, 2000) : null, onApplied, dryRun: args.dry_run === true });
       // A dry run only lists what would be applied (Sol M2).
       if (!out.error && out.dryRun) return { text: compact(out) };
       if (!out.error && out.applied.length) out.seeIt = 'The applied files show on the page as edits (highlight, Changes list, code view). Tell the user where to look (the page or route the task named).';

@@ -7,6 +7,8 @@ Report security problems privately. Don't open a public issue.
 - **GitHub:** Go to the **Security** tab of this repository, and then select **Report a vulnerability**.
 - **Email:** Send the report to mymotomaker@gmail.com with "EditLens security" in the subject.
 
+EditLens has no website or domain. The GitHub repository is the only official source.
+
 Include:
 
 - The EditLens version (run `/plugin` in Claude Code to see it)
