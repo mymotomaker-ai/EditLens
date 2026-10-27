@@ -4,7 +4,7 @@
 
 <p align="center">See each change Claude makes to your website, live. A plugin for Claude Code.</p>
 
-<p align="center"><a href="https://www.claudepluginhub.com/plugins/mymotomaker-ai-editlens?ref=badge"><img src="https://www.claudepluginhub.com/badge/mymotomaker-ai-editlens" alt="Listed on ClaudePluginHub"></a></p>
+<p align="center"><a href="https://www.claudepluginhub.com/plugins/mymotomaker-ai-editlens?ref=badge"><img src="https://www.claudepluginhub.com/badge/mymotomaker-ai-editlens" alt="Listed on ClaudePluginHub"></a> <a href="https://hol.org/registry/plugins/mymotomaker-ai%2Feditlens"><img src="https://img.shields.io/endpoint?url=https%3A%2F%2Fhol.org%2Fapi%2Fregistry%2Fbadges%2Fplugin%3Fslug%3Dmymotomaker-ai%252Feditlens%26metric%3Dtrust%26style%3Dflat%26label%3DHOL%2BRegistry" alt="HOL Registry trust score"></a></p>
 
 ![Claude edits a page: each change is highlighted, the code view types it out, and two agents work at the same time](docs/editlens-demo.gif)
 
