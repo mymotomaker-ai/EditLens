@@ -1977,3 +1977,25 @@ test('a refused permission mode change shows why', { options: { permission_mode:
   expect(toasts).toContain("✦ ✕ Couldn't change Permission mode · your admin's policy blocks it")
   await ui.unmount()
 })
+
+// Directory Validate 3: /editlens line changes the setting in the command.run hooks themselves.
+test('/editlens line hides and shows the line above the prompt, typed or as the skill', async ($, on) => {
+  const { sets } = stubs(on, SUMMARY)
+  on('command.run', { command: 'editlens:editlens' }, () => ({ text: 'skill' }))
+  await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
+  const hidden = await $.command.run({ command: 'editlens', args: 'line' })
+  expect(sets).toEqual([{ key: 'editlens.line_above_prompt', value: false }])
+  expect(hidden.text).toContain('Line above the prompt hidden')
+  await $.command.run({ command: 'editlens:editlens', args: 'line', origin: { kind: 'composer' } })
+  expect(sets.length).toBe(2)
+  expect((await $.command.run({ command: 'editlens:editlens', args: 'line', origin: { kind: 'sdk' } })).text).toBe('skill')
+  expect(sets.length).toBe(2)
+})
+
+test('/editlens line says why when Claude Code refuses it', async ($, on) => {
+  stubs(on, SUMMARY, { configSet: () => ({ deny: 'Blocked by your policy' }) })
+  await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
+  const out = await $.command.run({ command: 'editlens', args: 'line' })
+  expect(out.text).toContain("Couldn't change the line above the prompt")
+  expect(out.text).toContain("your admin's policy blocks it")
+})

@@ -47,16 +47,31 @@ test('no object key named on', () => {
   assert.deepStrictEqual(where(/[{,]\s*on\s*:|^\s*on\s*:/), []);
 });
 
-test('$.config.set names its key as fixed text', () => {
+test('$.config.set is one object written in the call: a fixed key and value: value', () => {
   const calls = where(/\$\.config\.set\(/);
   assert.ok(calls.length >= 1, 'the mod changes settings');
-  assert.deepStrictEqual(calls.filter((l) => !/\$\.config\.set\(\{ key: '[a-z_.]+', value \}\)/.test(l)), []);
+  assert.deepStrictEqual(calls.filter((l) => !/\$\.config\.set\(\{ key: '[a-z_.]+', value: value \}\)/.test(l)), []);
 });
 
-test('a fixed settings key for every setting in plugin.json', () => {
-  const keys = [...new Set([...SRC.matchAll(/\$\.config\.set\(\{ key: 'editlens\.([a-z_]+)', value \}\)/g)].map((m) => m[1]))].sort();
+// Run 3: a settings change in a helper function, on the helper's own $, can't be read. Each one is
+// written in a hook: inside register(), or in a top-level function registered by name.
+test('every $.config.set is inside a hook, not a helper function', () => {
+  const body = (re) => {
+    const start = lines.findIndex((l) => re.test(l));
+    return [start, lines.findIndex((l, i) => i > start && /^\}$/.test(l))];
+  };
+  const hooks = [...SRC.matchAll(/^\s*on\('[^']+',(?: \{[^}]*\},)? (\w+)\)/gm)].map((m) => m[1]);
+  const ranges = [body(/^export function register\(on, \w+\) \{$/),
+    ...hooks.map((n) => body(new RegExp('^(async )?function ' + n + '\\(')))];
+  assert.ok(ranges.every(([s, e]) => s >= 0 && e > s), 'register() and each hook given by name');
+  const outside = lines.map((l, i) => (/\$\.config\.set\(/.test(l) && !ranges.some(([s, e]) => i > s && i < e) ? `${i + 1}: ${l.trim()}` : null));
+  assert.deepStrictEqual(outside.filter(Boolean), []);
+});
+
+test('a fixed settings key for every setting the mod changes (the port changes in /config only)', () => {
+  const keys = [...new Set([...SRC.matchAll(/\$\.config\.set\(\{ key: 'editlens\.([a-z_]+)', value: value \}\)/g)].map((m) => m[1]))].sort();
   const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '.claude-plugin', 'plugin.json'), 'utf8'));
-  assert.deepStrictEqual(keys, Object.keys(manifest.userConfig).sort());
+  assert.deepStrictEqual(keys, Object.keys(manifest.userConfig).filter((k) => k !== 'port').sort());
 });
 
 // The directory reads a change of the permission mode only when the hook makes it on its own $:

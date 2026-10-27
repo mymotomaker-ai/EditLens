@@ -28,6 +28,8 @@ let pluginVersion = null // this installed plugin's version, from plugin.json
 let started = false
 let reported = '' // the settings last sent to the server
 const applied = new Set() // page requests already made in Claude Code
+const pagePending = [] // page requests to make, in order (the session.start hook makes them)
+let pageApplying = false
 let busy = null // what /editlens is doing now, shown in the line
 const drawnAt = {} // surface -> when it last asked to draw the line above the prompt (for /editlens details)
 let noticeSeen = -1 // the last pairing notice shown (-1: none read yet)
@@ -586,43 +588,12 @@ async function toolEnded($, e) {
   }
 }
 
-// One fixed key per setting: the plugin directory reads a settings change only when its key is
-// written out, so no key is built from text. The permission mode is changed only in the Settings
-// pane's hook. -> Claude Code's answer, or null for a key not changed here
-function configSet($, k, value) {
-  switch (k) {
-    case 'start': return $.config.set({ key: 'editlens.start', value })
-    case 'effort': return $.config.set({ key: 'editlens.effort', value })
-    case 'safety_check': return $.config.set({ key: 'editlens.safety_check', value })
-    case 'remote_tasks': return $.config.set({ key: 'editlens.remote_tasks', value })
-    case 'paired_answers': return $.config.set({ key: 'editlens.paired_answers', value })
-    case 'task_account': return $.config.set({ key: 'editlens.task_account', value })
-    case 'tasks_at_once': return $.config.set({ key: 'editlens.tasks_at_once', value })
-    case 'subagent_copies': return $.config.set({ key: 'editlens.subagent_copies', value })
-    case 'permission_glow': return $.config.set({ key: 'editlens.permission_glow', value })
-    case 'highlight': return $.config.set({ key: 'editlens.highlight', value })
-    case 'hover_code': return $.config.set({ key: 'editlens.hover_code', value })
-    case 'pick_box': return $.config.set({ key: 'editlens.pick_box', value })
-    case 'dictation': return $.config.set({ key: 'editlens.dictation', value })
-    case 'follow_page': return $.config.set({ key: 'editlens.follow_page', value })
-    case 'expand_code_view': return $.config.set({ key: 'editlens.expand_code_view', value })
-    case 'wait': return $.config.set({ key: 'editlens.wait', value })
-    case 'line_above_prompt': return $.config.set({ key: 'editlens.line_above_prompt', value })
-    case 'theme': return $.config.set({ key: 'editlens.theme', value })
-    case 'text_size': return $.config.set({ key: 'editlens.text_size', value })
-    case 'editor': return $.config.set({ key: 'editlens.editor', value })
-    case 'auto_connect': return $.config.set({ key: 'editlens.auto_connect', value })
-    case 'port': return $.config.set({ key: 'editlens.port', value })
-    default: return null
-  }
-}
-
-// Changes one setting in Claude Code (it saves it and reloads this file with the new value).
-async function setSetting($, k, value) {
+// A value Claude Code can save for this setting. Each change is made in the hook that asks for
+// it (the Settings pane, the page's requests, /editlens line): the plugin directory reads a settings
+// change only on a hook's own $, with its key as fixed text.
+function fits(k, value) {
   const field = schema[k]
-  if (!field || settingValue(field, value) !== value) return 'That value does not fit.'
-  if (k === 'permission_mode') return 'Change it in /editlens settings.'
-  return settingAnswer(configSet($, k, value))
+  return Boolean(field) && settingValue(field, value) === value
 }
 
 // Claude Code's answer to a settings change. -> null when made, else why not
@@ -637,10 +608,6 @@ async function settingAnswer(made) {
 }
 
 // A change from the Settings pane: a toast only when it fails, in plain words.
-async function changeSetting($, k, field, value) {
-  settingFailed($, k, field, await setSetting($, k, value))
-}
-
 function settingFailed($, k, field, err) {
   if (err) $.ui.toast('✦ ✕ Couldn\'t change ' + settingName(k, field) + ' · ' + plainReason(err))
 }
@@ -670,7 +637,8 @@ export function pendingToApply(list, seen) {
     !seen.has(p.id) && typeof p.key === 'string' && PAGE_EDITABLE.includes(p.key))
 }
 
-// Changes requested in the page panel's Settings, made in Claude Code (the user's, never a driven one).
+// Changes requested in the page panel's Settings, kept for the session.start hook to make
+// (the user's, never a driven one).
 async function applyPending($, list) {
   if (await driven($)) return
   for (const p of pendingToApply(list, applied)) {
@@ -678,11 +646,14 @@ async function applyPending($, list) {
     applied.add(p.id)
     // Only recent ones matter (a request is done or discarded within seconds).
     if (applied.size > 200) applied.delete(applied.values().next().value)
-    const err = await setSetting($, p.key, p.value)
-    if (!err) continue
-    $.ui.log('✦ ✕ Couldn\'t change ' + settingName(p.key, schema[p.key]) + ' · ' + plainReason(err))
-    await refuse($, p.id)
+    pagePending.push(p)
   }
+}
+
+// A page request Claude Code refused: a line in the transcript, and the server removes it.
+async function pageRefused($, p, err) {
+  $.ui.log('✦ ✕ Couldn\'t change ' + settingName(p.key, schema[p.key]) + ' · ' + plainReason(err))
+  await refuse($, p.id)
 }
 
 // Tells the server Claude Code refused a page's request, so it removes it (the value in effect stays).
@@ -1989,12 +1960,6 @@ async function runCommand($, args, { typed = false } = {}) {
     await refresh($)
     return output(recordsFromText(agentsText(off ? null : summary)))
   }
-  if (word === 'line') {
-    const was = current().line_above_prompt
-    const err = await setSetting($, 'line_above_prompt', !was)
-    if (err) return output([rec({ k: 'fail', what: "Couldn't change the line above the prompt", detail: plainReason(err) }), rec({ k: 'fix', before: 'Change it in', cmd: '/config', after: '(search "editlens")' })])
-    return output([was ? rec({ k: 'done', text: 'Line above the prompt hidden', note: '· /editlens line shows it' }) : rec({ k: 'done', text: 'Line above the prompt shown' })])
-  }
   // restart then does what /editlens does: page control may start (and set itself up the first time).
   const slow = word === 'control' || word === 'task-user' || word === 'restart' || (!word && current().start === 'Connect and turn on page control')
   const kind = word === 'task-user' ? 'task-user' : word === 'restart' ? 'restart' : slow ? 'control' : word === 'stop' ? 'stop' : word === 'manual' ? 'manual' : word === 'pair' || word === 'join' ? 'pair' : word === 'help' || word === 'status' || word === 'usage' || word === 'undo' || word === 'restore' || word === 'effort' ? null : 'connect'
@@ -2184,9 +2149,26 @@ export function notTypedStop(args, kind) {
   return stopName(args) !== null && kind !== 'composer' && kind !== 'bridge'
 }
 
-// /editlens: runs bin/start.js with what was typed after it.
+// /editlens: runs bin/start.js with what was typed after it. /editlens line changes the setting here.
 async function editlensRun($, e) {
-  return answerEditlens($, e)
+  if (!isLineWord(e && e.args)) return answerEditlens($, e)
+  try {
+    await startEditlens($)
+    const value = !current().line_above_prompt
+    return lineOutput(value, await settingAnswer($.config.set({ key: 'editlens.line_above_prompt', value: value })))
+  } finally {
+    await saveOutputs($)
+  }
+}
+
+export function isLineWord(args) {
+  return /^\s*line(\s|$)/i.test(String(args || ''))
+}
+
+// What /editlens line says. shown: the new value; err: Claude Code's refusal, or null.
+function lineOutput(shown, err) {
+  if (err) return output([rec({ k: 'fail', what: "Couldn't change the line above the prompt", detail: plainReason(err) }), rec({ k: 'fix', before: 'Change it in', cmd: '/config', after: '(search "editlens")' })])
+  return output([shown ? rec({ k: 'done', text: 'Line above the prompt shown' }) : rec({ k: 'done', text: 'Line above the prompt hidden', note: '· /editlens line shows it' })])
 }
 
 // The answer to /editlens, for both hooks below.
@@ -2215,7 +2197,15 @@ function editlensLate($, e, next) {
 // Claude doesn't run it as a Bash command. Other sessions (SDK, such as page control) get the skill.
 async function skillRun($, e, next) {
   const kind = e && e.origin && e.origin.kind
-  return kind === 'composer' || kind === 'bridge' ? answerEditlens($, e) : next(e)
+  if (kind !== 'composer' && kind !== 'bridge') return next(e)
+  if (!isLineWord(e && e.args)) return answerEditlens($, e)
+  try {
+    await startEditlens($)
+    const value = !current().line_above_prompt
+    return lineOutput(value, await settingAnswer($.config.set({ key: 'editlens.line_above_prompt', value: value })))
+  } finally {
+    await saveOutputs($)
+  }
 }
 
 // The skill is the one /editlens in the typeahead: listed with the command's own words.
@@ -2230,6 +2220,39 @@ export function register(on, opts) {
   on('session.start', async ($, e, next) => {
     const out = await next(e)
     await startEditlens($, { atStart: true })
+    // The page's requests (applyPending keeps them), one at a time and in order.
+    const pageChange = (k, value) => {
+      switch (k) {
+        case 'start': return $.config.set({ key: 'editlens.start', value: value })
+        case 'effort': return $.config.set({ key: 'editlens.effort', value: value })
+        case 'permission_glow': return $.config.set({ key: 'editlens.permission_glow', value: value })
+        case 'highlight': return $.config.set({ key: 'editlens.highlight', value: value })
+        case 'hover_code': return $.config.set({ key: 'editlens.hover_code', value: value })
+        case 'pick_box': return $.config.set({ key: 'editlens.pick_box', value: value })
+        case 'dictation': return $.config.set({ key: 'editlens.dictation', value: value })
+        case 'follow_page': return $.config.set({ key: 'editlens.follow_page', value: value })
+        case 'expand_code_view': return $.config.set({ key: 'editlens.expand_code_view', value: value })
+        case 'wait': return $.config.set({ key: 'editlens.wait', value: value })
+        case 'line_above_prompt': return $.config.set({ key: 'editlens.line_above_prompt', value: value })
+        case 'theme': return $.config.set({ key: 'editlens.theme', value: value })
+        case 'text_size': return $.config.set({ key: 'editlens.text_size', value: value })
+        case 'editor': return $.config.set({ key: 'editlens.editor', value: value })
+        case 'tasks_at_once': return $.config.set({ key: 'editlens.tasks_at_once', value: value })
+        default: return Promise.resolve({ deny: 'The page can\'t change this setting.' })
+      }
+    }
+    $.clock.every(POLL_MS, async () => {
+      if (pageApplying) return
+      pageApplying = true
+      try {
+        for (let p = pagePending.shift(); p; p = pagePending.shift()) {
+          const err = fits(p.key, p.value) ? await settingAnswer(pageChange(p.key, p.value)) : 'That value does not fit.'
+          if (err) await pageRefused($, p, err)
+        }
+      } finally {
+        pageApplying = false
+      }
+    })
     // The first start ever, with a user at the prompt: one dim line (Claude Code adds "editlens:"
     // at the start). Later starts print nothing; the line above the prompt shows EditLens is on.
     if (e && e.isInteractive) await welcome($)
@@ -2310,6 +2333,35 @@ export function register(on, opts) {
     // The terminal measures in cells, so the dots can fill the space exactly.
     const exact = e.surface === 'terminal'
     const values = current()
+    // Each setting's change (the port changes in /config only).
+    const change = (k, value) => {
+      if (!fits(k, value)) return Promise.resolve({ deny: 'That value does not fit.' })
+      switch (k) {
+        case 'start': return $.config.set({ key: 'editlens.start', value: value })
+        case 'permission_mode': return $.config.set({ key: 'editlens.permission_mode', value: value })
+        case 'effort': return $.config.set({ key: 'editlens.effort', value: value })
+        case 'safety_check': return $.config.set({ key: 'editlens.safety_check', value: value })
+        case 'remote_tasks': return $.config.set({ key: 'editlens.remote_tasks', value: value })
+        case 'paired_answers': return $.config.set({ key: 'editlens.paired_answers', value: value })
+        case 'task_account': return $.config.set({ key: 'editlens.task_account', value: value })
+        case 'tasks_at_once': return $.config.set({ key: 'editlens.tasks_at_once', value: value })
+        case 'subagent_copies': return $.config.set({ key: 'editlens.subagent_copies', value: value })
+        case 'permission_glow': return $.config.set({ key: 'editlens.permission_glow', value: value })
+        case 'highlight': return $.config.set({ key: 'editlens.highlight', value: value })
+        case 'hover_code': return $.config.set({ key: 'editlens.hover_code', value: value })
+        case 'pick_box': return $.config.set({ key: 'editlens.pick_box', value: value })
+        case 'dictation': return $.config.set({ key: 'editlens.dictation', value: value })
+        case 'follow_page': return $.config.set({ key: 'editlens.follow_page', value: value })
+        case 'expand_code_view': return $.config.set({ key: 'editlens.expand_code_view', value: value })
+        case 'wait': return $.config.set({ key: 'editlens.wait', value: value })
+        case 'line_above_prompt': return $.config.set({ key: 'editlens.line_above_prompt', value: value })
+        case 'theme': return $.config.set({ key: 'editlens.theme', value: value })
+        case 'text_size': return $.config.set({ key: 'editlens.text_size', value: value })
+        case 'editor': return $.config.set({ key: 'editlens.editor', value: value })
+        case 'auto_connect': return $.config.set({ key: 'editlens.auto_connect', value: value })
+        default: return Promise.resolve({ deny: 'Change it in /config.' })
+      }
+    }
     const kids = [Box({ key: 'head', flexDirection: 'row', justifyContent: 'space-between', columnGap: 2, children: [
       Text({ children: [Text({ color: 'claude', children: ['✦ '] }), Text({ bold: true, children: ['EditLens settings'] })] }),
       ...(cols < NARROW ? [] : [Text({ dimColor: true, wrap: 'truncate-end', children: ['same as /config · saved now'] })]),
@@ -2351,10 +2403,7 @@ export function register(on, opts) {
             return
           }
           armed = null
-          if (k !== 'permission_mode') return changeSetting($, k, field, to)
-          // Here in the hook: the plugin directory reads a permission mode change only on the hook's own $.
-          const value = to
-          return settingFailed($, k, field, await settingAnswer($.config.set({ key: 'editlens.permission_mode', value })))
+          return settingFailed($, k, field, await settingAnswer(change(k, to)))
         }
         const picked = k === chosen
         const restart = k === 'port' && v !== port ? (portByEnv ? 'Uses ' + port + ' from EDITLENS_PORT.' : 'Applies after a restart.') : ''
@@ -2399,12 +2448,7 @@ export function register(on, opts) {
         for (const [k, field] of Object.entries(schema)) {
           // The port is left as it is: it is changed in /config, and only after a restart.
           if (k === 'port' || values[k] === field.default) continue
-          if (k !== 'permission_mode') {
-            await changeSetting($, k, field, field.default)
-            continue
-          }
-          const value = field.default
-          settingFailed($, k, field, await settingAnswer($.config.set({ key: 'editlens.permission_mode', value })))
+          settingFailed($, k, field, await settingAnswer(change(k, field.default)))
         }
       } }),
       ...(cols < NARROW ? [] : [Text({ dimColor: true, wrap: 'truncate-end', children: ['Tab move · Enter change · Esc close'] })]),
