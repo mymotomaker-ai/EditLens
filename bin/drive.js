@@ -286,7 +286,7 @@ function sayControl(r, more) {
       // The SSH lines end with their own blank line.
       if (r.advice.paired || r.advice.other) say.blank();
     }
-    say.hint(['/editlens control', 'run Claude from the page'], ['/editlens stop', 'disconnect']);
+    say.hint(['/editlens control', 'use Claude from the page'], ['/editlens stop', 'disconnect']);
     return;
   }
   // Kept across /editlens restart: it starts again when its page reconnects.

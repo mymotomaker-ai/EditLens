@@ -109,7 +109,7 @@ test('/editlens restart: restarts, then does what /editlens does', async () => {
   // R1 (0.24.40): the Control field says so too, not Manual.
   assert.match(back, /Control ·+ ● Page control {2}starts again when the page reconnects/);
   assert.doesNotMatch(back, MANUAL_LINE);
-  assert.doesNotMatch(back, /run Claude from the page/);
+  assert.doesNotMatch(back, /use Claude from the page/);
 
   // Setting on, nothing running before: it turns page control on, as /editlens does.
   fs.rmSync(KEEP, { force: true });

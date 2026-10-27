@@ -714,7 +714,7 @@ test('Details, help, join and usage share the column helper: label 12, command 2
   stubs(on, SUMMARY, { stdout: [
     R({ k: 'head', title: 'Paired computers', plain: ['✦ Paired computers'] }),
     R({ k: 'row', label: '◆ laptop-1', value: '● Connected', tone: 'ok', width: 10, plain: ['◆ laptop-1 ·· ● Connected'] }),
-    R({ k: 'cmd', cmd: '/editlens control', what: 'run Claude from the page', plain: ['  /editlens control     run Claude from the page'] }),
+    R({ k: 'cmd', cmd: '/editlens control', what: 'use Claude from the page', plain: ['  /editlens control     use Claude from the page'] }),
     R({ k: 'field', label: 'Page', value: 'http://127.0.0.1:4678/', link: true, plain: ['Page ······ http://127.0.0.1:4678/'] }),
   ].join('\n') })
   await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })

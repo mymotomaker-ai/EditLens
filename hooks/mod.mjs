@@ -106,7 +106,7 @@ export function accessText(s) {
   if (s.pageControlError) return 'Page control stopped: ' + s.pageControlError
   if (pc.installed === false) return 'Page control is off. Run /editlens control (sets it up once, about a minute).'
   if (pc.signedIn === false) return 'Page control needs sign-in. Run /editlens control, then Sign in on the page.'
-  return 'Page control is off. Run /editlens control to run Claude from the page.'
+  return 'Page control is off. Enter /editlens control to use Claude from the page.'
 }
 
 function ctxColor(pct) {
