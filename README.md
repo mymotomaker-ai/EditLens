@@ -95,6 +95,7 @@ All commands: [docs/commands.md](docs/commands.md).
 - **MCP server.** `node mcp/live-page.js` gives Claude 26 tools. Each tool states whether it only reads.
 - **git.** Adds and removes worktrees for subagents, and reads status, diffs, and history.
 - **npm.** The first time page control starts, it installs `@anthropic-ai/claude-agent-sdk` into `~/.claude/editlens`. Page control and tasks run Claude through it with your own Claude login. Sign-in uses `claude auth status` and `claude auth login`.
+- **Task account.** Only when you type `/editlens task-user` (Linux, as root): it makes a normal `editlens` account, then runs Claude Code's official installer as that user: `curl -fsSL https://claude.ai/install.sh | bash`.
 - **Files it reads.** Claude Code's settings files (it never changes them), and files in the project Claude works in, for the code view and the edit cards. It never reads hidden or secret-looking files.
 - **Files it writes.** Only `~/.claude/editlens`, and EditLens lines in your files when connecting needs them. `/editlens stop remove` removes those lines.
 - **Network.** Nothing goes to the author. See [Privacy](#privacy).

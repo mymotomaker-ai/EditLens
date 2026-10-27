@@ -1,6 +1,6 @@
 'use strict';
 require('./isolate');
-// The plugin directory's rules for the mod (hooks/mod.mjs), from its Validate on 2026-10-27: the
+// The plugin directory's rules for the mod (hooks/mod.mjs), from its Validate runs 1 and 2 on 2026-10-27: the
 // names $, on and next are only the engine's, each hook is a plain on('event', ...) statement
 // (a .catch(handler) may follow), and a settings change names its key as fixed text on the hook's $.
 const test = require('node:test');
@@ -24,7 +24,7 @@ test('each hook registration is a plain on(...), with at most a .catch(handler) 
 
 // Code only: strings, template text, regex literals and comments are taken out first.
 const code = (l) => l.replace(/'(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`/g, "''")
-  .replace(/([(=,:!&|?]\s*)\/(?:\\.|\[(?:\\.|[^\]])*\]|[^/\n])+\/[a-z]*/g, '$1/x/').replace(/\/\/.*$/, '');
+  .replace(/([(=,:!&|?>]\s*|\breturn\s+)\/(?:\\.|\[(?:\\.|[^\]])*\]|[^/\n])+\/[a-z]*/g, '$1/x/').replace(/\/\/.*$/, '');
 
 test('on is used only for registrations and the register parameter', () => {
   const uses = lines.map((l, i) => [i + 1, code(l)]).filter(([, c]) => /(?<![\w.$])on(?![\w$])/.test(c))
@@ -54,7 +54,58 @@ test('$.config.set names its key as fixed text', () => {
 });
 
 test('a fixed settings key for every setting in plugin.json', () => {
-  const keys = [...SRC.matchAll(/\$\.config\.set\(\{ key: 'editlens\.([a-z_]+)', value \}\)/g)].map((m) => m[1]).sort();
+  const keys = [...new Set([...SRC.matchAll(/\$\.config\.set\(\{ key: 'editlens\.([a-z_]+)', value \}\)/g)].map((m) => m[1]))].sort();
   const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '.claude-plugin', 'plugin.json'), 'utf8'));
   assert.deepStrictEqual(keys, Object.keys(manifest.userConfig).sort());
+});
+
+// The directory reads a change of the permission mode only when the hook makes it on its own $:
+// here the Settings pane's hook, the one place the person changes it.
+test('the permission mode is changed only in the Settings pane hook', () => {
+  const start = lines.findIndex((l, i) => /^\s*on\('ui\.render', \{ component: 'Pane' \}/.test(l) && /SETTINGS_PANE/.test(lines[i + 1]));
+  const end = lines.findIndex((l, i) => i > start && /^\s*on\(/.test(l));
+  assert.ok(start > 0 && end > start, 'the Settings pane hook');
+  const calls = lines.map((l, i) => (/key: 'editlens\.permission_mode'/.test(l) ? i : -1)).filter((i) => i >= 0);
+  assert.ok(calls.length >= 1, 'the pane changes the permission mode');
+  assert.deepStrictEqual(calls.filter((i) => i < start || i > end).map((i) => `${i + 1}: ${lines[i].trim()}`), []);
+});
+
+// Each use of $ is a $.noun.method call (or a value such as $.plugin.root), a hook's or a
+// function's parameter, or one whole argument to a function declared once at the top of the file.
+test('each use of $ is plain', () => {
+  const odd = [];
+  lines.forEach((l, i) => {
+    const c = code(l);
+    for (const m of c.matchAll(/(?<![\w$])\$(?![\w$])/g)) {
+      const before = c.slice(0, m.index);
+      const after = c.slice(m.index + 1);
+      if (/^\.\w+\.\w+/.test(after)) continue;
+      if (/(?:^|[^\w$.])\w+\(\s*$/.test(before) && /^\s*[,)]/.test(after)) continue;
+      if (/\(\s*$/.test(before) && /^, e(, next)?\) =>/.test(after)) continue;
+      odd.push(`${i + 1}: ${l.trim()}`);
+    }
+  });
+  assert.deepStrictEqual(odd, []);
+});
+
+test('a function given $ has a name used for nothing else', () => {
+  const code1 = lines.map(code);
+  const names = new Set(code1.flatMap((c) => [...c.matchAll(/(?<![\w$.])(\w+)\(\s*\$\s*[,)]/g)].map((m) => m[1])));
+  const other = [];
+  for (const n of names) {
+    let declared = 0;
+    code1.forEach((c, i) => {
+      for (const m of c.matchAll(new RegExp('(?<![\\w$])' + n + '(?![\\w$])', 'g'))) {
+        const before = c.slice(0, m.index);
+        const after = c.slice(m.index + n.length);
+        if (/^(export )?(async )?function $/.test(before)) declared++;
+        else if (/^\s*\(/.test(after) && !/\.\s*$/.test(before)) continue;
+        else if (/^\s*on\(/.test(c)) continue;
+        else other.push(`${i + 1}: ${n} in ${lines[i].trim().slice(0, 100)}`);
+      }
+    });
+    if (declared !== 1) other.push(`${n}: declared ${declared} times at the top`);
+  }
+  assert.ok(names.size > 20, 'the mod passes $ to its functions');
+  assert.deepStrictEqual(other, []);
 });

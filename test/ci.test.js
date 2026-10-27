@@ -37,3 +37,23 @@ test('CI runs the mod tests (test/mod.test.ts) with Claude Code\'s test runner',
   assert.match(job, /npm install -g @anthropic-ai\/claude-code@\d+\.\d+\.\d+\n/);
   assert.match(job, /- run: claude plugin test \.$/m);
 });
+
+// Plugin catalogs score CI hygiene: actions pinned to a commit, read-only permissions, no saved
+// git login after checkout, and Dependabot for actions and npm.
+test('every workflow pins its actions, reads only, and keeps no git login', () => {
+  const dir = path.join(__dirname, '..', '.github', 'workflows');
+  const files = fs.readdirSync(dir).filter((f) => /\.ya?ml$/.test(f));
+  assert.ok(files.length >= 2, 'the test and scan workflows');
+  for (const f of files) {
+    const text = fs.readFileSync(path.join(dir, f), 'utf8');
+    assert.match(text, /^permissions:\n {2}contents: read$/m, `${f}: permissions`);
+    const uses = [...text.matchAll(/uses: (\S+)/g)].map((m) => m[1]);
+    assert.ok(uses.length >= 1, `${f}: uses actions`);
+    assert.deepStrictEqual(uses.filter((u) => !/@[0-9a-f]{40}$/.test(u)), [], `${f}: actions pinned to a commit`);
+    const checkouts = text.split(/\n(?= {6}- )/).filter((s) => /uses: actions\/checkout@/.test(s));
+    assert.deepStrictEqual(checkouts.filter((s) => !/persist-credentials: false/.test(s)), [], `${f}: checkout keeps no login`);
+  }
+  const bot = fs.readFileSync(path.join(__dirname, '..', '.github', 'dependabot.yml'), 'utf8');
+  assert.match(bot, /package-ecosystem: "github-actions"/);
+  assert.match(bot, /package-ecosystem: "npm"/);
+});

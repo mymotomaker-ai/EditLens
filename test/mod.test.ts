@@ -1953,3 +1953,27 @@ test('S9-d: after the person moves to another row, the changed row does not take
   expect(asked.length).toBe(1)
   await ui.unmount()
 })
+
+// Directory Validate 2: the permission mode is changed in the Settings pane's hook itself. A press
+// and Reset to defaults still change it, and a refusal still shows.
+test('the Settings pane changes the permission mode, and Reset puts it back', { options: { permission_mode: 'Plan' } }, async ($, on) => {
+  const { sets } = stubs(on, SUMMARY, { manifest: FULL })
+  await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
+  const ui = await $.ui.mount({ ...SETTINGS_PANE, surface: 'terminal' })
+  await ui.press({ key: 'set-permission_mode' })
+  expect(sets).toEqual([{ key: 'editlens.permission_mode', value: 'Auto' }])
+  await ui.press({ key: 'reset' })
+  expect(sets).toContainEqual({ key: 'editlens.permission_mode', value: 'Auto' })
+  await ui.unmount()
+})
+
+test('a refused permission mode change shows why', { options: { permission_mode: 'Plan' } }, async ($, on) => {
+  stubs(on, SUMMARY, { manifest: FULL, configSet: () => ({ deny: 'Blocked by your policy' }) })
+  const toasts: string[] = []
+  on('ui.toast', ($, e) => { toasts.push(e.text); return { value: undefined } })
+  await $.session.start({ surface: 'terminal', isInteractive: true, cwd: '/work' })
+  const ui = await $.ui.mount({ ...SETTINGS_PANE, surface: 'terminal' })
+  await ui.press({ key: 'set-permission_mode' })
+  expect(toasts).toContain("✦ ✕ Couldn't change Permission mode · your admin's policy blocks it")
+  await ui.unmount()
+})

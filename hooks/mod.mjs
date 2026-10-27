@@ -587,11 +587,11 @@ async function toolEnded($, e) {
 }
 
 // One fixed key per setting: the plugin directory reads a settings change only when its key is
-// written out, so no key is built from text. -> Claude Code's answer, or null for an unknown key
+// written out, so no key is built from text. The permission mode is changed only in the Settings
+// pane's hook. -> Claude Code's answer, or null for a key not changed here
 function configSet($, k, value) {
   switch (k) {
     case 'start': return $.config.set({ key: 'editlens.start', value })
-    case 'permission_mode': return $.config.set({ key: 'editlens.permission_mode', value })
     case 'effort': return $.config.set({ key: 'editlens.effort', value })
     case 'safety_check': return $.config.set({ key: 'editlens.safety_check', value })
     case 'remote_tasks': return $.config.set({ key: 'editlens.remote_tasks', value })
@@ -621,8 +621,14 @@ function configSet($, k, value) {
 async function setSetting($, k, value) {
   const field = schema[k]
   if (!field || settingValue(field, value) !== value) return 'That value does not fit.'
+  if (k === 'permission_mode') return 'Change it in /editlens settings.'
+  return settingAnswer(configSet($, k, value))
+}
+
+// Claude Code's answer to a settings change. -> null when made, else why not
+async function settingAnswer(made) {
   try {
-    const out = await configSet($, k, value)
+    const out = await made
     return out && out.deny ? String(out.deny) : null
   } catch (err) {
     if (!(err instanceof Error)) throw err
@@ -632,7 +638,10 @@ async function setSetting($, k, value) {
 
 // A change from the Settings pane: a toast only when it fails, in plain words.
 async function changeSetting($, k, field, value) {
-  const err = await setSetting($, k, value)
+  settingFailed($, k, field, await setSetting($, k, value))
+}
+
+function settingFailed($, k, field, err) {
   if (err) $.ui.toast('✦ ✕ Couldn\'t change ' + settingName(k, field) + ' · ' + plainReason(err))
 }
 
@@ -1149,7 +1158,7 @@ function readSchema($) {
   return schemaRead
 }
 
-async function start($, { atStart = false } = {}) {
+async function startEditlens($, { atStart = false } = {}) {
   if (started) {
     // A drawing started this file before session.start: the setting's port, now that it is known.
     if (atStart) {
@@ -1724,13 +1733,13 @@ async function editsCall($, method, path, body) {
   }
 }
 
-async function where($) {
+async function sessionPlace($) {
   const [sid, cwd] = await Promise.all([$.session.id(), $.session.cwd()])
   return { session: sid || '', cwd: cwd || '' }
 }
 
 async function loadEdits($) {
-  const w = await where($)
+  const w = await sessionPlace($)
   const r = await editsCall($, 'GET', '/edits/recent?session=' + encodeURIComponent(w.session) + '&cwd=' + encodeURIComponent(w.cwd))
   const ok = !r.down && r.json && Array.isArray(r.json.edits)
   undoPane.list = ok ? recentEdits(r.json) : []
@@ -1749,7 +1758,7 @@ async function undoAct($, action, n, back) {
   try {
     const row = undoPane.list.find((e) => e.n === n)
     const which = row && row.seq && undoPane.instance ? { seq: row.seq, instance: undoPane.instance } : {}
-    const r = await editsCall($, 'POST', '/edits/' + action, { n, ...which, ...(back ? { back: true } : {}), ...(await where($)) })
+    const r = await editsCall($, 'POST', '/edits/' + action, { n, ...which, ...(back ? { back: true } : {}), ...(await sessionPlace($)) })
     const out = outcomeOf(r, { action, n, back })
     // A press in the pane is the user's own: the message goes in their prompt, never sent.
     if (out.kind === 'conflict') out.filled = await fillPrompt($, out.message)
@@ -1791,7 +1800,7 @@ function undoChoices($, { Box, Text, Button }, ed) {
     if (r.filled) out.push(line('prompt', [Text({ dimColor: true, wrap: 'wrap', children: [IN_PROMPT] })]))
     else {
       out.push(line('copy-note', [Text({ dimColor: true, children: [COPY_NOTE] })]))
-      out.push(line('message', [Text({ key: 'm', bold: true, wrap: 'wrap', children: [r.message] }), Button({ key: 'copy', label: 'Copy', plain: true, onPress: (press) => $.ui.copy({ text: r.message, surface: press && press.surface }) })]))
+      out.push(line('message', [Text({ key: 'm', bold: true, wrap: 'wrap', children: [r.message] }), Button({ key: 'copy', label: 'Copy', plain: true, onPress: (pressed) => $.ui.copy({ text: r.message, surface: pressed && pressed.surface }) })]))
     }
   } else {
     out.push(line('result', [Text({ key: 't', wrap: 'wrap', children: [Text({ color: 'error', children: ['✕ '] }), Text({ children: [r.text] })] })]))
@@ -1870,7 +1879,7 @@ async function agentAct($, a, action) {
   agentPane.result = null
   $.ui.invalidate('ui.render')
   try {
-    const { cwd } = await where($)
+    const { cwd } = await sessionPlace($)
     const r = action === 'follow'
       ? await editsCall($, 'POST', '/agents/follow', { cwd, ...a.follow })
       : await editsCall($, 'POST', a.stop.path, { ...a.stop.body, ...(a.stop.path === '/remote/task' ? { localDir: cwd } : { cwd }) })
@@ -1970,7 +1979,7 @@ async function runCommand($, args, { typed = false } = {}) {
   // /editlens stop <name>: a page control session or a task, by the name in the Sessions list.
   const named = stopName(args)
   if (named !== null) {
-    const { cwd } = await where($)
+    const { cwd } = await sessionPlace($)
     const r = await editsCall($, 'POST', '/sessions/stop', { cwd, name: named })
     await refresh($)
     return output(stopNameRecords(r, named))
@@ -2186,7 +2195,7 @@ async function answerEditlens($, e) {
     const kind = e && e.origin && e.origin.kind
     if (notTypedNew(e && e.args, kind)) return output([rec({ k: 'fail', what: 'Only you can make a starter page' }), rec({ k: 'fix', before: 'Type', cmd: '/editlens new', after: 'at the prompt yourself' })])
     if (notTypedStop(e && e.args, kind)) return output([rec({ k: 'fail', what: 'Only you can stop a session by its name' }), rec({ k: 'fix', before: 'Type', cmd: '/editlens stop ' + oneLine(stopName(e.args), 60), after: 'at the prompt yourself' })])
-    await start($)
+    await startEditlens($)
     // Typed at this computer's prompt (not Remote Control, a plugin or a button).
     return await runCommand($, e.args, { typed: kind === 'composer' })
   } catch (err) {
@@ -2220,7 +2229,7 @@ export function register(on, opts) {
 
   on('session.start', async ($, e, next) => {
     const out = await next(e)
-    await start($, { atStart: true })
+    await startEditlens($, { atStart: true })
     // The first start ever, with a user at the prompt: one dim line (Claude Code adds "editlens:"
     // at the start). Later starts print nothing; the line above the prompt shows EditLens is on.
     if (e && e.isInteractive) await welcome($)
@@ -2245,7 +2254,7 @@ export function register(on, opts) {
   // The line above the prompt.
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (e && typeof e.surface === 'string') drawnAt[e.surface] = Date.now()
-    if (!started) await start($)
+    if (!started) await startEditlens($)
     if (current().line_above_prompt === false || (e.props && e.props.hasSurvey)) return next(e)
     const { Box, Text, Button, Link } = $.ui.resolve(e)
     const theirs = await next(e)
@@ -2342,7 +2351,10 @@ export function register(on, opts) {
             return
           }
           armed = null
-          return changeSetting($, k, field, to)
+          if (k !== 'permission_mode') return changeSetting($, k, field, to)
+          // Here in the hook: the plugin directory reads a permission mode change only on the hook's own $.
+          const value = to
+          return settingFailed($, k, field, await settingAnswer($.config.set({ key: 'editlens.permission_mode', value })))
         }
         const picked = k === chosen
         const restart = k === 'port' && v !== port ? (portByEnv ? 'Uses ' + port + ' from EDITLENS_PORT.' : 'Applies after a restart.') : ''
@@ -2387,7 +2399,12 @@ export function register(on, opts) {
         for (const [k, field] of Object.entries(schema)) {
           // The port is left as it is: it is changed in /config, and only after a restart.
           if (k === 'port' || values[k] === field.default) continue
-          await changeSetting($, k, field, field.default)
+          if (k !== 'permission_mode') {
+            await changeSetting($, k, field, field.default)
+            continue
+          }
+          const value = field.default
+          settingFailed($, k, field, await settingAnswer($.config.set({ key: 'editlens.permission_mode', value })))
         }
       } }),
       ...(cols < NARROW ? [] : [Text({ dimColor: true, wrap: 'truncate-end', children: ['Tab move · Enter change · Esc close'] })]),
@@ -3043,7 +3060,7 @@ async function reloadSessionsPane($) {
 }
 
 async function loadSessions($) {
-  const { cwd } = await where($)
+  const { cwd } = await sessionPlace($)
   const r = await editsCall($, 'GET', '/sessions?cwd=' + encodeURIComponent(cwd))
   const ok = !r.down && r.json && Array.isArray(r.json.groups)
   sessionsPane.cwd = cwd
@@ -3081,7 +3098,7 @@ async function sessionAct($, row, action, value) {
   sessionsPane.result = null
   $.ui.invalidate('ui.render')
   try {
-    const { cwd } = await where($)
+    const { cwd } = await sessionPlace($)
     const r = action === 'open' ? await editsCall($, 'POST', '/agents/follow', { cwd, key: row.follow })
       : action === 'stop' ? await editsCall($, 'POST', '/sessions/stop', { cwd, key: row.key })
         : await editsCall($, 'POST', '/sessions/rename', { cwd, key: row.key, name: String(value || '') })

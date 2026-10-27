@@ -3,6 +3,8 @@ on:
   push:
     branches: [main]
   pull_request:
+permissions:
+  contents: read
 jobs:
   test:
     # Linux only: some tests use symlinks and runuser. Node 18 is the oldest EditLens supports.
@@ -12,8 +14,10 @@ jobs:
       matrix:
         node: [18, 22]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ matrix.node }}
       - run: git config --global user.email ci@example.com && git config --global user.name CI
@@ -59,8 +63,10 @@ jobs:
     # The mod (hooks/mod.mjs, test/mod.test.ts) in Claude Code's own test runner. It needs no login.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
       - run: npm install -g @anthropic-ai/claude-code@2.1.296
@@ -69,8 +75,10 @@ jobs:
     # Click-through tests of the page panel and code view in Chromium. Each script prints ok/FAIL lines and exits 1 on a failure.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
       - run: git config --global user.email ci@example.com && git config --global user.name CI
@@ -97,7 +105,7 @@ jobs:
           done
           exit $failed
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: browser-screenshots
           path: ${{ runner.temp }}

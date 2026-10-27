@@ -194,7 +194,8 @@ and such tasks say so). Type this once in Claude Code on the server:
 ```
 
 It creates a normal account named `editlens` (no password, no sudo, its own group) and installs
-its own Claude Code. Then sign that account in yourself, in a terminal on the server (it has its
+its own Claude Code with Claude Code's official installer, run as that user
+(`curl -fsSL https://claude.ai/install.sh | bash`). Then sign that account in yourself, in a terminal on the server (it has its
 own login; nothing is copied from root):
 
 ```sh
