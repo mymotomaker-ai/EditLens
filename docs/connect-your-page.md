@@ -1,51 +1,76 @@
 # Connect your page
 
-**The easy way, with no changes to your project:** in Claude Code, run **`/editlens`**.
+To see Claude's changes, EditLens must connect to your website in the browser. This page shows how.
 
-- **Vite projects:** EditLens runs your own Vite (from your `node_modules`, with your own
-  `vite.config`) with EditLens added, and prints the address to open. Everything works, including
-  exact source lines when you select things on the page. The extra config is in
-  `~/.claude/editlens/connect`, never in your project.
-- **A plain site** (an `index.html` and no dev script): EditLens serves the folder itself, so no
-  dev server is needed. Each edit shows on the page immediately. Hidden files (`.git`, `.env`) are
-  never served, and it listens on 127.0.0.1 only. You can seek to any point in video and audio.
-- **Anything else** (Next.js, Express, your own server): start your dev server as usual, then run
-  `/editlens`. It looks where the server ran last time, then where the project's dev script or
-  framework runs it (`--port`, `-p`, `PORT=` in the script or in `.env`, then 3000 for Next.js). It
-  connects by itself only when it's sure the server is this project's: the port is in the project's
-  dev script or `.env`, the program listening there runs from the project folder (its working
-  folder on Linux and macOS, its command line on Windows), or the server responded there within the
-  last 12 hours with the same page title. When none of these is true (say another project's server
-  on port 3000), it asks: click **Connect localhost:3000** on the EditLens line above the prompt,
-  or run `/editlens <address>`.
-  If it isn't running, `/editlens` says the exact command to start it (`npm run dev`, say). If it's somewhere else, give the
-  address: `/editlens http://localhost:3000`. EditLens gives you a local address (the same one each
-  time for a project) that serves your app with the EditLens script added to every page. Hot reload
-  still works. A site with an `index.html` keeps working when its own server stops: EditLens
-  serves the folder until the server is back.
-- **Python (Flask, FastAPI, Django):** start your server as usual (`flask run --debug`,
-  `uvicorn main:app --reload` or `python manage.py runserver`), then run `/editlens`. EditLens
-  recognizes the project from `manage.py` or its `requirements.txt` / `pyproject.toml`, finds the
-  server on 5000 (Flask) or 8000 (Django, FastAPI), and gives you an address that serves your app
-  with EditLens added. If the server isn't running, `/editlens` prints the command to start it.
-  In any other project, 5000 and 8000 are tried last and only when they serve a web page (on a Mac,
-  AirPlay uses 5000). To use your server's own address instead, add the script tag to your base
-  template between marker comments:
-  ```html
-  <!-- editlens:start -->
-  <script src="http://127.0.0.1:4317/live.js" data-root="/path/to/your/project"></script>
-  <!-- editlens:end -->
-  ```
-  `/editlens stop remove` removes it again. Editing a `.py` route highlights the parts of the page
-  that route fills.
-- With **Connect when Claude Code starts** on (the default), all of this happens by itself when a
-  session starts.
-- It stops with **`/editlens stop`**, or by itself when the Claude Code session that
-  connected it ends. Your own dev server, if you run one, is never touched.
+## The easy way: `/editlens`
 
-**Or add it to your files** in one of the ways below. Each one is for development only. Put the
-added lines between `editlens:start` and `editlens:end` comments, each on its own line, so they
-can be taken out later:
+In Claude Code, enter **`/editlens`**. EditLens finds your website and shows an address. Open that address in your
+browser. You don't need to change your project.
+
+With the **Connect when Claude Code starts** setting on (the default), this happens by itself when a session
+starts.
+
+To disconnect, enter **`/editlens stop`**. EditLens also disconnects when the Claude Code session that connected it
+ends. EditLens never stops or changes your own dev server.
+
+What `/editlens` does depends on your project:
+
+### Vite projects
+
+EditLens runs your own Vite, with your own `vite.config`, and adds EditLens to it. Everything works, including the
+exact source lines when you select parts of the page. The extra settings are saved in
+`~/.claude/editlens/connect`, never in your project.
+
+### Plain websites
+
+A plain website is a folder with an `index.html` file and no dev script. EditLens shows the folder itself, so you
+don't need a dev server. Each change appears on the page immediately.
+
+EditLens never shows hidden files (`.git`, `.env`), and only your own computer can open the address.
+
+### Next.js, Express, and other dev servers
+
+1. Start your dev server as usual, for example with `npm run dev`.
+2. Enter `/editlens`.
+
+EditLens looks for your server where it ran last time, and then where the project's dev script runs it (`--port`,
+`-p`, or `PORT=` in the script or in `.env`, then port 3000 for Next.js).
+
+EditLens connects by itself only when it is sure the server belongs to this project. If it isn't sure, for example
+when another project's server uses port 3000, it asks you. Select **Connect localhost:3000** on the EditLens line
+above the prompt, or enter `/editlens <address>`.
+
+- If your server isn't running, `/editlens` shows the command to start it.
+- If your server uses another address, enter it: `/editlens http://localhost:3000`.
+
+EditLens gives you its own address for your website, with EditLens added to every page. The address stays the same
+for each project. Hot reload still works. If your site has an `index.html` file and its server stops, EditLens shows
+the folder until the server starts again.
+
+### Python (Flask, FastAPI, Django)
+
+1. Start your server as usual, for example `flask run --debug`, `uvicorn main:app --reload`, or
+   `python manage.py runserver`.
+2. Enter `/editlens`.
+
+EditLens finds the project from `manage.py`, `requirements.txt`, or `pyproject.toml`. It looks for the server on port
+5000 (Flask) or 8000 (Django and FastAPI). When you change a `.py` route, EditLens highlights the parts of the page
+that the route fills.
+
+To use your server's own address instead, add this tag to your base template:
+
+```html
+<!-- editlens:start -->
+<script src="http://127.0.0.1:4317/live.js" data-root="/path/to/your/project"></script>
+<!-- editlens:end -->
+```
+
+## Add EditLens to your files yourself
+
+You can also add EditLens to your project files. Use this for development only.
+
+Put the added lines between `editlens:start` and `editlens:end` comments, each on its own line. EditLens can then
+find and remove them later:
 
 ```js
 // editlens:start
@@ -61,50 +86,68 @@ export default defineConfig({
 });
 ```
 
-**`/editlens stop remove`** then removes every marked block (a copy of each file is
-kept first), including blocks marked `live-edits:start` and `live-edits:end` (the old name). Lines without markers are listed, and Claude removes them only if you say so.
+To remove them, enter **`/editlens stop remove`**. EditLens saves a copy of each file first. It also removes blocks
+marked `live-edits:start` and `live-edits:end` (the old name). EditLens lists lines without these comments, and
+Claude removes them only if you say so.
 
-Reminders, so EditLens doesn't stay in your project by accident:
+### Vite (`vite.config.js`)
 
-- A `git commit` (by Claude, in Claude Code or page control) whose changes add EditLens to a file
-  asks first, with **Deny** to keep it out of the commit.
-- The EditLens line above Claude Code's prompt shows `! in vite.config.js` while a project file
-  loads EditLens, and the Details pane lists the lines.
-- The Vite plugin only runs in `vite dev` (`apply: 'serve'`), so a production build never includes
-  it, even if it is left in.
-
-**Vite** (`vite.config.js`):
 ```js
 import editlens from '/path/to/editlens/integrations/vite.mjs';
 export default defineConfig({ plugins: [react(), editlens()] });
 ```
 
-**Next.js** (`app/layout.tsx`):
+The Vite plugin runs only in `vite dev`, so a production build never includes EditLens.
+
+### Next.js (`app/layout.tsx`)
+
 ```tsx
 import Script from 'next/script';
 // inside <body>
 {process.env.NODE_ENV === 'development' && <Script src="http://127.0.0.1:4317/live.js" data-root="/path/to/your/project" />}
 ```
 
-**Express / Connect:**
+### Express or Connect
+
 ```js
 if (process.env.NODE_ENV !== 'production') app.use(require('/path/to/editlens/integrations/middleware.js')());
 ```
 
-**With a strict Content-Security-Policy:** give the Vite plugin or the middleware a `nonce`
-option and it is added to the EditLens script tag: `editlens({ nonce: 'abc' })` for Vite, and for
-Express a string or a function that gets the request, such as `({ nonce: (req) => req.cspNonce })`.
-The policy must also allow the live server's address in `script-src` and `connect-src`
-(`http://127.0.0.1:4317`, or the port you set), and `'unsafe-inline'` in `style-src` for the
-panel's styles.
+### Any other website, including plain HTML
 
-**Anything else**, including plain HTML: add this tag. Put it in `<head>`, or anywhere before your
-app's scripts, so it can record which API calls fill the page:
+Add this tag in `<head>`, before your app's scripts:
+
 ```html
 <script src="http://127.0.0.1:4317/live.js" data-root="/path/to/your/project"></script>
 ```
-`data-root` is your project folder. Without it the page only shows edits: it can't send messages,
-open files or take page control.
 
-Inside Claude Code, `/editlens status` shows what is connected and any EditLens lines in your
-project files.
+`data-root` is your project folder. Without it, the page only shows changes. It can't send messages, open files, or
+use page control.
+
+### Script tag options
+
+| Attribute | Default | What it does |
+| --- | --- | --- |
+| `data-root` | None. Vite, the EditLens address, and the middleware set it | Your project folder. Needed to send messages, open files, restore, and use page control. A drive, the file system root, or your home folder is ignored |
+| `data-panel` | Your last choice, or `open` | `open`, `min`, or `hidden` |
+| `data-reload` | `auto` | For pages without hot reload: `auto`, `morph` (never reload the whole page), `full`, or `off` |
+| `data-theme` | The page's theme, or your computer's | `light` or `dark` |
+| `data-settle` | `600` | Milliseconds to wait for the page to update before highlighting |
+
+### Sites with a strict Content Security Policy
+
+Give the Vite plugin or the middleware a `nonce` option, and EditLens adds it to its script tag:
+
+- Vite: `editlens({ nonce: 'abc' })`
+- Express: a string, or a function that gets the request, such as `({ nonce: (req) => req.cspNonce })`
+
+The policy must also allow `http://127.0.0.1:4317` (or the port you set) in `script-src` and `connect-src`, and
+`'unsafe-inline'` in `style-src` for the panel's styles.
+
+## So EditLens doesn't stay in your project by mistake
+
+- If a `git commit` would add EditLens to a file, EditLens asks first. Select **Deny** to keep it out of the commit.
+- While a project file loads EditLens, the EditLens line in Claude Code shows a warning such as
+  `! in vite.config.js`. The Details pane lists the lines.
+
+To see what is connected and any EditLens lines in your files, enter `/editlens status`.

@@ -2,7 +2,7 @@
   "name": "editlens",
   "version": "1.0.0",
   "displayName": "EditLens",
-  "description": "See Claude's edits on your page as they happen: each change is highlighted, the chat and code appear next to the page, and Claude can run from the page.",
+  "description": "See each change Claude makes to your website, live: changed parts are highlighted, the chat and code appear beside the page, and you can use Claude from the page.",
   "author": {
     "name": "mymotomaker-ai",
     "url": "https://github.com/mymotomaker-ai"
@@ -26,7 +26,7 @@
     "start": {
       "type": "string",
       "title": "What /editlens does",
-      "description": "Run Claude from the panel on the page too (page control, the default), or only connect the page (Manual). With page control picked and Connect when Claude Code starts on, it also turns on by itself when a session starts and your page opens.",
+      "description": "Run Claude from the panel on your page (page control, the default), or only show Claude's work on the page (Manual). With Connect when Claude Code starts on, page control turns on when a session starts and your page opens.",
       "options": [
         "Connect the page",
         "Connect and turn on page control"
@@ -36,7 +36,7 @@
     "permission_mode": {
       "type": "string",
       "title": "Page control: permission mode",
-      "description": "How Claude asks before acting when you run it from the page: the mode page control starts in. The menu under the panel's message box changes it for the page control that runs now. Bypass is never a default.",
+      "description": "How often Claude asks before it acts when you use it from the page. This is the mode page control starts in. The menu under the panel's message box changes it for the current session only. Bypass is never the default.",
       "options": [
         "Ask",
         "Accept edits",
@@ -49,7 +49,7 @@
     "effort": {
       "type": "string",
       "title": "Effort",
-      "description": "Claude's effort level for page messages and tasks it starts. Auto: the level Claude Code uses by itself (the one /effort saves, else its default). Max is never saved: pick it on the page or with /editlens effort max, for the page control session running now.",
+      "description": "How much effort Claude puts into each answer when you use it from the page, and in tasks it starts. More effort gives better answers, but takes longer and uses more of your plan. Auto uses the same level as Claude Code. Max is never saved: choose it on the page or with /editlens effort max, for the current session only.",
       "options": [
         "Auto",
         "Low",
@@ -68,19 +68,19 @@
     "remote_tasks": {
       "type": "boolean",
       "title": "Paired computers can run Claude here",
-      "description": "A computer you paired with this one (/editlens pair) can ask Claude here to do tasks (each in its own copy of the project in a git project) and start page control here (/editlens control). They run in this computer's permission mode. Their permission questions appear in the EditLens panel, where a page can only deny; only you can allow them, in the EditLens window on this computer. Off blocks starting tasks, messaging or merging them, and page control; the paired computer can still list its tasks and copy files from this project.",
+      "description": "Lets a computer paired with this one give tasks to Claude here and start page control here. Permission questions from those tasks appear in the panel, and only you can allow them, in this computer's EditLens window. Off: the paired computer can only list its tasks and copy files from this project.",
       "default": true
     },
     "paired_answers": {
       "type": "boolean",
       "title": "Paired computers can answer questions here",
-      "description": "A computer that joined this one (/editlens join) can allow or deny Claude's permission questions here, in its own EditLens window. Only questions about the paired project, and only a person clicking in that window. Turn it on here only: the paired computer and its page can't. Off: you answer on this computer.",
+      "description": "Lets a computer that joined this one (/editlens join) allow or deny Claude's permission questions here, in this computer's EditLens window opened through the pairing. Only questions about the paired project. Only this computer can turn it on. Off: you answer on this computer.",
       "default": false
     },
     "task_account": {
       "type": "string",
       "title": "Run paired computers' tasks as",
-      "description": "Auto: on Linux, when Claude Code runs as root, tasks on a project sent from a paired computer run as the normal account editlens once /editlens task-user has set it up (without it, they run as root and say so). Root (unsafe): every task runs as root, which can change anything on this computer. It turns on only once you allow it in this computer's EditLens window.",
+      "description": "Auto: on Linux, when Claude Code runs as root, tasks from a paired computer run as the normal account editlens, after you set it up with /editlens task-user. Without that account, they run as root and say so. Root (unsafe): every task runs as root and can change anything on this computer. It turns on only after you allow it in this computer's EditLens window.",
       "options": [
         "Auto",
         "Root (unsafe)"
@@ -90,7 +90,7 @@
     "tasks_at_once": {
       "type": "number",
       "title": "Tasks at once",
-      "description": "Each running task adds about 0.3–0.5 GB of memory and uses your plan's limits in parallel. Paired computers' tasks run on this computer, 1 to 8 at a time; more tasks wait for an available session. A change applies to the next task that starts, and running tasks keep running.",
+      "description": "How many tasks from paired computers run on this computer at the same time, 1 to 8. More tasks wait. Each running task uses about 0.3–0.5 GB of memory and uses your plan's limits. A change applies to the next task that starts.",
       "min": 1,
       "max": 8,
       "default": 4
@@ -98,25 +98,25 @@
     "subagent_copies": {
       "type": "boolean",
       "title": "Subagents work in their own copy",
-      "description": "In a git project, each subagent that can edit files works in its own copy of the project (a git worktree), so agents working at the same time can't overwrite each other's edits. Its changes are added to your project when Claude merges them, or when you click Merge in the panel.",
+      "description": "In a git project, each subagent that can change files works in its own copy of the project (a git worktree), so agents can't overwrite each other's changes. Its changes are added to your project when Claude merges them, or when you select Merge in the panel.",
       "default": true
     },
     "permission_glow": {
       "type": "boolean",
       "title": "Highlight when Claude waits for you",
-      "description": "The floating permissions button is highlighted while a question waits for your answer. Off: it stays still. It never moves when your system is set to reduce motion.",
+      "description": "Highlights the permissions button on the page while a question waits for your answer. It never moves when your computer is set to reduce motion.",
       "default": true
     },
     "highlight": {
       "type": "boolean",
       "title": "Highlight changes on the page",
-      "description": "Changed parts of the page are highlighted for a moment.",
+      "description": "Highlights the changed parts of the page for a moment.",
       "default": true
     },
     "hover_code": {
       "type": "boolean",
       "title": "Show code on hover",
-      "description": "Hover over a changed part of the page to see its code, old and new, right beside it. Click the card to keep it open.",
+      "description": "Shows the old and new code beside a changed part of the page when you move the pointer over it. Select the card to keep it open.",
       "default": true
     },
     "pick_box": {
@@ -128,7 +128,7 @@
     "dictation": {
       "type": "string",
       "title": "Dictation",
-      "description": "Where your voice is turned into text when you press the mic. On this device: on your computer only. Allow online: the browser may send the audio to its maker. Off: no mic button.",
+      "description": "Where your voice is turned into text when you use the mic. On this device: on your computer only. Allow online: the browser may send the audio to its maker. Off: no mic button.",
       "options": [
         "On this device",
         "Allow online",
@@ -139,31 +139,31 @@
     "follow_page": {
       "type": "boolean",
       "title": "Follow: go to the page being changed",
-      "description": "When Claude edits a file shown on another page of your app, the page goes there.",
+      "description": "When Claude changes a file shown on another page of your app, your page goes to that page.",
       "default": true
     },
     "expand_code_view": {
       "type": "boolean",
       "title": "Expand the code view for new requests",
-      "description": "When the code view is made smaller to a narrow bar, it opens again for the first edit of each new request.",
+      "description": "When the code view is made smaller to a narrow bar, it opens again for the first change of each new request.",
       "default": true
     },
     "wait": {
       "type": "boolean",
       "title": "Wait for page messages",
-      "description": "After Claude finishes, it keeps waiting a few minutes for a message typed on the page (terminal sessions only).",
+      "description": "After Claude finishes, it waits a few minutes for a message typed on the page. Terminal sessions only.",
       "default": false
     },
     "line_above_prompt": {
       "type": "boolean",
       "title": "Line above the prompt",
-      "description": "Show the EditLens status line above Claude Code's prompt.",
+      "description": "Shows the EditLens status line above Claude Code's prompt.",
       "default": true
     },
     "theme": {
       "type": "string",
       "title": "Panel colors",
-      "description": "Light, dark, or Auto: the page's own colors, else your computer's.",
+      "description": "Light, Dark, or Auto. Auto uses the page's own colors, or your computer's if the page has none.",
       "options": [
         "Auto",
         "Light",
@@ -185,7 +185,7 @@
     "editor": {
       "type": "string",
       "title": "Editor",
-      "description": "The code editor that Open in the file menu starts. The menu opens from the file name in the code view and from More on an edit card. None hides Open; Copy path and Copy code still work.",
+      "description": "The code editor that Open starts, in the file menu of the code view and in More on a change card. None hides Open. Copy path and Copy code still work.",
       "options": [
         "VS Code",
         "Cursor",
@@ -196,13 +196,13 @@
     "auto_connect": {
       "type": "boolean",
       "title": "Connect when Claude Code starts",
-      "description": "Connect your page when a session starts, so /editlens isn't needed first. Vite projects start their page with EditLens; a plain site (index.html) is served by EditLens itself; other projects are connected when their dev server is already running. Nothing in your project changes.",
+      "description": "Connects your page when a session starts, so you don't need to enter /editlens first. Nothing in your project changes.",
       "default": true
     },
     "port": {
       "type": "number",
       "title": "Port",
-      "description": "Where the EditLens server listens on this computer. Change it only if 4317 is taken. Takes effect after you restart Claude Code.",
+      "description": "The port the EditLens server uses on this computer. Change it only if 4317 is in use. The change applies after you restart Claude Code.",
       "min": 1024,
       "max": 65535,
       "default": 4317

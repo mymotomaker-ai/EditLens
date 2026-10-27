@@ -325,7 +325,7 @@ function site(port, serverPort, root, title) {
         desc: row.querySelector('.sdesc').textContent, head, before: row.previousElementSibling && row.previousElementSibling.textContent }`;
     let step = await waitFor(async () => { const x = await q(vpage, STEP); return x && x.value === '1' ? x : null; }, 10000);
     check('Settings › Other computers: Tasks at once, a stepper at 1 (− off at the lowest)', Boolean(step) && step.title === 'Tasks at once' && step.minus && !step.plus && step.head.join() === 'Other computers' && step.before === 'Other computers', step || await q(vpage, STEP));
-    check('it says what each task costs', Boolean(step) && /^Each running task adds about 0\.3–0\.5 GB of memory and uses your plan's limits in parallel\./.test(step.desc), step && step.desc);
+    check('it says what each task costs', Boolean(step) && /^How many tasks from paired computers run on this computer at the same time, 1 to 8\. .*about 0\.3–0\.5 GB of memory/.test(step.desc), step && step.desc);
     await vpage.locator('.stepper[data-key="tasks_at_once"]').scrollIntoViewIfNeeded();
     await vpage.locator('.stepper[data-key="tasks_at_once"]').evaluate((n) => n.closest('.srow').scrollIntoView({ block: 'center' }));
     await vpage.screenshot({ path: path.join(outDir, 'sessions-settings-stepper.png') });

@@ -205,11 +205,11 @@ test('failures: the server\'s reason, bad N, a refused key, the server down', as
 
 test('help lists undo and restore, with a topic for each', async () => {
   const help = await run(['help']);
-  assert.match(help.stdout, /\/editlens undo {8}recent edits: undo one, or restore its file/);
-  assert.match(help.stdout, /\/editlens undo N {6}undo only edit N \(back: put it back\)/);
-  assert.match(help.stdout, /\/editlens restore N {3}the whole file from before edit N/);
-  assert.match((await run(['help', 'undo'])).stdout, /undo N back puts it back/);
-  assert.match((await run(['help', 'restore'])).stdout, /restore N back undoes the restore/);
+  assert.match(help.stdout, /\/editlens undo {8}list recent changes to undo/);
+  assert.match(help.stdout, /\/editlens undo N {6}undo only change N/);
+  assert.match(help.stdout, /\/editlens restore N {3}restore the file from before change N/);
+  assert.match((await run(['help', 'undo'])).stdout, /undo N back cancels the undo/);
+  assert.match((await run(['help', 'restore'])).stdout, /restore N back cancels the restore/);
   const skill = fs.readFileSync(path.join(ROOT, 'skills', 'editlens', 'SKILL.md'), 'utf8');
   assert.match(skill, /argument-hint: ".*undo \[N\] \| restore N/);
   assert.match(skill, /don't make that change yourself until the user sends it/);

@@ -3,12 +3,12 @@
   "owner": {
     "name": "mymotomaker-ai"
   },
-  "description": "See Claude's edits on your page as they happen.",
+  "description": "See each change Claude makes to your website, live.",
   "plugins": [
     {
       "name": "editlens",
       "source": "./",
-      "description": "See Claude's edits on your page as they happen."
+      "description": "See each change Claude makes to your website, live."
     }
   ]
 }

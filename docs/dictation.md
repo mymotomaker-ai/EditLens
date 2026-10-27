@@ -1,32 +1,33 @@
 # Dictation: speak instead of typing
 
-The panel's message box and the box next to a pick have a **mic**. Press it (or **Ctrl+Shift+Space**
-in the box) and speak. Your browser turns your voice into text. Nothing is ever sent by itself: you
-read the text, change it if you like, and press Send.
+You can speak your message instead of typing it. Your browser turns your voice into text.
+
+The panel's message box and the box next to a pick have a **mic** button. Select it, or press **Ctrl+Shift+Space**
+in the box, and speak. Nothing is sent by itself. You read the text, change it if needed, and select **Send**.
 
 ## Step 1. Press the mic and choose where your voice goes
 
 The first time, a card asks where your voice is turned into text.
 
-- **On this device only** (chosen at first): it stays on your computer. Chrome downloads its speech
-  model once; the button says **Download and start**.
+- **On this device only** (default): your voice stays on your computer. Chrome downloads its speech
+  model once. The button shows **Download and start**.
 - **Online**: the browser sends the audio to its maker (Google for Chrome) to turn it into text.
 
 ![The first-use card above the mic: On this device only, or Online](dictation/dictation-1-first-use.png)
 
-Edge and Safari can only do it online. Their card says where the audio goes and that nothing else
-from the page is sent; press **Allow** to continue.
+Edge and Safari work online only. Their card says where the audio goes, and that nothing else
+from the page is sent. Select **Allow** to continue.
 
 ![The card in a browser that does it online only](dictation/dictation-4-online.png)
 
-Then the browser asks once for the microphone.
+The browser then asks one time for access to the microphone.
 
 ## Step 2. Speak
 
-The box gets a red ring, the mic becomes a red **Stop** pill and a line above the box says
-**Listening · on this device** (or **online**). Words still being heard are grey; they turn normal
-when the browser is sure of them. They go in at the cursor and never replace what you typed, and you
-can keep typing while it listens.
+The box gets a red ring, the mic becomes a red **Stop** button, and a line above the box shows
+**Listening · on this device** (or **online**). Words that the browser isn't sure of yet are grey. They turn
+black when the browser is sure. The words are added at the cursor and never replace what you typed. You can keep
+typing while it listens.
 
 ![Listening: grey words still being heard after the typed text](dictation/dictation-2-listening.png)
 
@@ -34,24 +35,24 @@ can keep typing while it listens.
 
 ## Step 3. Stop
 
-Any of these stops it: **Esc**, the **Stop** pill, **Send**, or a minute with no words. Send never
-sends the grey words.
+Dictation stops when you press **Esc**, select **Stop** or **Send**, or say nothing for one minute. **Send**
+never sends the grey words.
 
 ## In the box next to a pick
 
-The pick box has its own mic before **Add**. **Esc** stops listening first and keeps the box open;
+The box next to a pick has its own mic, before **Add**. **Esc** stops listening and keeps the box open.
 **Add** (or Enter) puts the note in the panel's message box, without the grey words.
 
 ![Dictating a note in the box next to a pick](dictation/dictation-3-pick-box.png)
 
 ## When there is no mic
 
-The mic stays, grey, and pressing it says why:
+The mic is grey. Select it to see why:
 
 - **Firefox** (and some other browsers) can't turn speech into text.
-- **A plain IP address** (http://192.168…) isn't a secure page: open the page on localhost, or
-  through the SSH tunnel `/editlens` prints.
-- **The microphone is blocked** for the page, or the site's Permissions-Policy turns it off: allow it
+- **A plain IP address** (http://192.168…) isn't a secure page. Open the page on localhost, or
+  through the SSH tunnel that `/editlens` shows.
+- **The microphone is blocked** for the page, or the site's Permissions-Policy turns it off. Allow it
   in the address bar.
 
 ![The grey mic's card in a browser without speech input](dictation/dictation-5-unavailable.png)

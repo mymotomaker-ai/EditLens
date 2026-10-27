@@ -1,6 +1,11 @@
 # How it works
 
-Claude Code's hooks send each event to a local server, and the server sends it to a script in your page.
+EditLens has three parts:
+
+1. **Hooks:** small scripts that Claude Code runs at fixed moments, for example before and after each change. They
+   send what Claude does to the local server.
+2. **Local server:** a small program on your computer (`127.0.0.1:4317`). It sends each event to your page.
+3. **Page script** (`live.js`): runs in your page. It highlights the changes and shows the panel.
 
 ```
 Claude Code hooks ──POST──▶ local server (127.0.0.1:4317) ──SSE──▶ live.js in your page
@@ -30,27 +35,21 @@ live-page MCP tool ──POST── highlight_on_page ────┤  snapshots
 - **Intent.** The hook reads the session transcript and attaches the sentence Claude wrote just
   before that exact tool call. On session start the plugin asks Claude to say in one sentence what it
   is about to change, so the captions stay useful.
-- **Messages from the page** wait on the local server and are given to Claude through hooks:
-  - **Claude is working:** Claude gets your message as soon as it finishes its current turn, and keeps
-    going. Messages aren't added in the middle of a turn, because Claude rightly ignores instructions that appear
-    inside tool output.
-  - **Claude has just finished:** if you turn on **Wait** in the panel (it is off by default), Claude
-    waits up to 5 minutes for a message from the page and answers it immediately. Its turn stays open
-    while it waits, so press `Esc` in the terminal or turn Wait off to stop early. Sessions that are
-    not a local terminal (Remote Control, the desktop or web app, the SDK) never wait, because they
-    would treat the open turn as not responding; set `EDITLENS_WAIT_ANYWHERE=1` to change this.
-  - **Otherwise** (Claude is idle, you stopped it with `Esc` or the stop button, or Claude Code is
-    closed): the message goes along with your next prompt. Claude Code has no way for a plugin to
-    start a new turn on its own, so nothing reads the page until then. The panel says which case
-    you are in under each waiting message, and offers **Turn on page control** (copies
-    `/editlens control`; paste it into Claude Code so Claude runs from the page and reads every
-    message immediately), **Copy** (to paste the message into Claude Code yourself) and **Cancel**
-    (Claude never gets it). The same button is under the message box and in the Manual
-    badge's how-to while you are in Manual.
-  - Claude Code's research-preview [channels](https://code.claude.com/docs/en/channels) can push a
-    message into an open session, but they need a startup flag in a terminal and an allowlisted
-    plugin, and there is no documented way to turn them on in the desktop app or Remote Control, so
-    this plugin doesn't use them yet.
+- **Messages from the page** wait on the local server until Claude can read them. Claude Code lets a plugin give
+  Claude a message only at fixed moments, so when Claude gets your message depends on what Claude is doing:
+  - **Claude is working:** Claude gets your message when it finishes its current turn, and continues. Messages are
+    not added in the middle of a turn, because Claude ignores instructions that appear inside tool output.
+  - **Claude has just finished:** if **Wait** is on in the panel (it is off by default), Claude waits up to 5
+    minutes for a message from the page and answers it immediately. To stop waiting early, press Esc in the
+    terminal or turn Wait off. Only local terminal sessions wait. Remote Control, the desktop and web apps, and the
+    SDK never wait. To change this, set `EDITLENS_WAIT_ANYWHERE=1`.
+  - **Claude is not working, was stopped, or Claude Code is closed:** the message is sent with your next prompt in
+    Claude Code. The panel shows this under the message, with three buttons: **Turn on page control** (copies
+    `/editlens control`, so Claude reads every message immediately), **Copy** (to paste the message into Claude
+    Code yourself), and **Cancel** (Claude never gets it).
+  - Claude Code's [channels](https://code.claude.com/docs/en/channels) could send a message into an open session,
+    but they are a research preview, need a startup flag in a terminal, and can't be turned on in the desktop app
+    or Remote Control. EditLens doesn't use them yet.
 
   ![A message sent after Claude was stopped](screenshots/panel-stopped.png)
 - **Backend edits.** A file counts as backend code based on its folder, its extension, or whether it

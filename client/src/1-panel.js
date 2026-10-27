@@ -1998,7 +1998,7 @@
     storageSet('localStorage', 'editlens.listen2', state.listen ? 'on' : 'off');
     renderPanel();
     updateHint();
-    postJson('/page', { id: PAGE_ID, listen: state.listen }).catch(function (err) { showToast('Wait could not be changed: ' + err.message); });
+    postJson('/page', { id: PAGE_ID, listen: state.listen }).catch(function (err) { showToast('Wait wasn\'t changed. Check that EditLens is running, and then try again. (Details: ' + err.message + ')'); });
     if (!fromSettings) saveSetting('wait', state.listen);
   }
   listenButton.addEventListener('click', function () { setListen(!state.listen); });
@@ -2101,12 +2101,12 @@
           showToast(json.message || 'Saved on this page only.');
           settings.noted = true;
         } else if (!res.ok) {
-          showToast((json && json.error) || 'That setting could not be changed.');
+          showToast((json && json.error) || 'The setting wasn\'t saved. Try again.');
         }
       });
     }).catch(function (err) {
-      showToast(err instanceof SyntaxError ? 'That setting could not be changed: EditLens sent a response it could not read.'
-        : 'EditLens is not responding, so the setting was not saved (' + err.message + ').');
+      showToast(err instanceof SyntaxError ? 'The setting wasn\'t saved because of an error in EditLens. Try again. If it happens again, enter /editlens restart in Claude Code.'
+        : 'The setting wasn\'t saved because EditLens isn\'t running. In Claude Code, enter /editlens, and then try again. (Details: ' + err.message + ')');
     });
   }
   function settingLabel(f, v) {
@@ -2241,12 +2241,12 @@
 
   // ---------- quick tour: four short steps the first time the panel opens ----------
   var TOUR = [
-    { title: 'Watch Claude work here', text: 'When Claude edits your app, the changed parts of this page are highlighted, and its replies appear in this panel.', target: function () { return feedEl; } },
-    { title: 'Message Claude', text: 'Type below to send Claude a message from the page. Press / for Claude Code commands.', target: function () { return composer; } },
-    { title: 'Show Claude something', text: 'Click the arrow at the top (Select), then a part of the page. It is sent with your next message.', target: function () { return pointButton; } },
-    { title: 'Everything else is under More', text: 'The … button has settings, text size, Wait, and where the panel is: a corner, floating, or its own window, and Full screen. In Claude Code, /editlens settings has the same settings.', target: function () { return panelLayoutButton; } },
+    { title: 'See what Claude changes', text: 'When Claude changes your app, the changed parts of this page are highlighted. Claude\'s replies appear in this panel.', target: function () { return feedEl; } },
+    { title: 'Message Claude', text: 'Type in the box below to send Claude a message. Type / to see Claude Code commands.', target: function () { return composer; } },
+    { title: 'Show Claude something', text: 'Select the arrow at the top, and then select a part of the page. Claude gets it with your next message.', target: function () { return pointButton; } },
+    { title: 'Everything else is under More', text: 'The … button has the settings, text size, Wait, Full screen, and the position of the panel. In Claude Code, /editlens settings has the same settings.', target: function () { return panelLayoutButton; } },
     // Optional, and only while Claude runs in Claude Code (Manual stays the default).
-    { title: 'Page control', get text() { return 'Run Claude from this panel instead of Claude Code. It needs a one-time setup and a login (an API key is recommended): type ' + PC_CMD + ' in Claude Code once (the button copies it). After that it turns on by itself when a session starts and this page opens.'; }, target: function () { return null; }, action: pcButton, skip: function () { return drive.active; } },
+    { title: 'Page control', get text() { return 'Use Claude from this panel instead of Claude Code. To set it up, enter ' + PC_CMD + ' in Claude Code one time. The button copies it. You also sign in once; an API key is recommended. After that, page control turns on by itself when a session starts and this page opens.'; }, target: function () { return null; }, action: pcButton, skip: function () { return drive.active; } },
   ];
   var tour = { on: false, step: 0, focus: null, steps: TOUR };
   function showTour(force) {

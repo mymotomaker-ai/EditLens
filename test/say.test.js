@@ -70,7 +70,7 @@ test('records mode: every line is a record; other lines are returned as text', (
   assert.deepStrictEqual(list[list.length - 1], { k: 'text', text: 'a stray line', plain: ['a stray line'] });
   const text = list.slice(0, -1).flatMap((r) => r.plain).join('\n');
   assert.match(text, /Everyday\n {2}\/editlens {13}connect your page/);
-  assert.match(text, /\n {2}\/editlens control {5}run Claude from the page/);
+  assert.match(text, /\n {2}\/editlens control {5}use Claude from the page/);
   assert.match(text, /Other computers\n {2}\/editlens pair {2}join {2}task-user/);
   // Without the mode: the same lines, as text.
   assert.strictEqual(run('help').stdout.trim().length > 0, true);

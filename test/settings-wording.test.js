@@ -40,5 +40,5 @@ test('the setting descriptions are short and say which computer and which mode (
   // permission_mode: the saved setting is the mode page control starts in; the panel's menu changes
   // only the page control that runs (the card says "change in /config" for the saved one).
   assert.match(SCHEMA.permission_mode.description, /starts in/);
-  assert.match(SCHEMA.permission_mode.description, /message box changes it for the page control that runs now/);
+  assert.match(SCHEMA.permission_mode.description, /message box changes it for the current session only/);
 });

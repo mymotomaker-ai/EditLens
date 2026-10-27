@@ -62,7 +62,7 @@ test('Settings: Effort in the Page control group; Effort here in the Claude Code
   const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '.claude-plugin', 'plugin.json'), 'utf8'));
   const field = manifest.userConfig.effort;
   assert.deepStrictEqual([field.title, field.options, field.default], ['Effort', ['Auto', 'Low', 'Medium', 'High', 'Extra high'], 'Auto']);
-  assert.match(field.description, /^Claude's effort level for page messages and tasks it starts\. Auto: the level Claude Code uses by itself/);
+  assert.match(field.description, /^How much effort Claude puts into each answer when you use it from the page, and in tasks it starts\. .* Auto uses the same level as Claude Code\./);
   const sec = mod.settingSections(manifest.userConfig).find((s) => s.title === 'Page control');
   assert.ok(sec.rows.some((r) => r.key === 'effort' && r.label === 'Effort'));
   assert.deepStrictEqual(mod.HERE_ROW, { key: 'effort_here', label: 'Effort here', group: 'Claude Code', about: 'This terminal\'s own level. Opens /effort.' });

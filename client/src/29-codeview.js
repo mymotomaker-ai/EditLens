@@ -1056,7 +1056,7 @@
   var snapshotFail = '';
   function snapshotFailText() {
     return snapshotFail === 'down'
-      ? 'Could not show this edit: EditLens is not responding. Check that it is running, then try again.'
+      ? 'This change can\'t be shown because EditLens isn\'t running. In Claude Code, enter /editlens, and then try again.'
       : 'Could not show this edit: its code is no longer kept (EditLens restarted or removed older edits).';
   }
   // Snapshot numbers start again when EditLens restarts: a reference also names the server start

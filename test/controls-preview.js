@@ -372,8 +372,8 @@ function change(rel, before, after, hunks, extra) {
       await stopServer();
       await sleep(500);
       await q(`const c = [...r.querySelectorAll('.k-edit')].find((x) => /fresh\.js/.test(x.textContent)); [...c.querySelectorAll('.mini.play')][0].click(); return true;`);
-      const down = await page.waitForFunction(`/not responding/.test((${ROOT}.querySelector('.toast.on') || {}).textContent || '')`, null, { timeout: 8000 }).then(() => true, onTimeout(false));
-      check('Replay with EditLens down says it is not responding', down, await q(`const t = r.querySelector('.toast'); return t ? t.textContent : ''`));
+      const down = await page.waitForFunction(`/isn't running/.test((${ROOT}.querySelector('.toast.on') || {}).textContent || '')`, null, { timeout: 8000 }).then(() => true, onTimeout(false));
+      check('Replay with EditLens down says EditLens is not running', down, await q(`const t = r.querySelector('.toast'); return t ? t.textContent : ''`));
     });
 
     await page.screenshot({ path: path.join(outDir, 'controls-end.png') });

@@ -281,7 +281,7 @@ function site(port, root) {
     await q(page, `[...r.querySelectorAll('.lwrap button')].find((b) => /All settings/.test(b.textContent)).click(); return true;`);
     await page.waitForFunction(`${ROOT}.querySelector('.srow')`, null, { timeout: 5000 }).catch(onTimeout(null));
     const row = await q(page, `const row = [...r.querySelectorAll('.srow')].find((x) => x.querySelector('.stitle') && x.querySelector('.stitle').textContent === 'Effort'); return row ? row.textContent : null`);
-    check('the page\'s Settings have Effort, with its levels', row && /Claude's effort level for page messages and tasks it starts/.test(row) && /Auto/.test(row), row);
+    check('the page\'s Settings have Effort, with its levels', row && /How much effort Claude puts into each answer/.test(row) && /Auto/.test(row), row);
     await page.screenshot({ path: path.join(outDir, 'effort-6-settings.png') });
     await q(page, `const b = [...r.querySelectorAll('button')].find((x) => x.textContent === 'Done'); if (b) b.click(); return true;`);
 

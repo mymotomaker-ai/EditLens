@@ -196,9 +196,9 @@ test('only the user starts /editlens new: the skill says so and the guard stops 
 
 test('help lists /editlens new, with its own topic', () => {
   const run = (...args) => spawnSync(process.execPath, [path.join(ROOT, 'bin', 'start.js'), ...args], { encoding: 'utf8', env: { ...process.env, EDITLENS_SAY: '' } }).stdout;
-  assert.match(run('help'), /\/editlens new {9}no app yet: make a starter page/);
-  assert.match(run('help', 'new'), /\/editlens new makes a starter page \(index\.html\) in a folder that has no app yet/);
-  assert.match(run('help', 'new'), /only you can run it/);
+  assert.match(run('help'), /\/editlens new {9}no app yet: create a starter page/);
+  assert.match(run('help', 'new'), /\/editlens new creates a starter page \(index\.html\) in a folder that has no app yet/);
+  assert.match(run('help', 'new'), /Only you can run it/);
 });
 
 test('the starter page: title from the folder name, escaped', () => {

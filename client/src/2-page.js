@@ -804,8 +804,8 @@
       markGone(id);
       return 'Could not restore: ' + GONE_TEXT;
     }
-    if (err && err.name === 'TypeError') return 'Could not restore: the EditLens live server isn\'t running. Start Claude Code in this project, then try again.';
-    if (err && err.name === 'SyntaxError') return 'Could not restore: the EditLens live server gave an answer it could not read. Try again.';
+    if (err && err.name === 'TypeError') return 'The file wasn\'t restored because EditLens isn\'t running. Start Claude Code in this project, and then try again.';
+    if (err && err.name === 'SyntaxError') return 'The file wasn\'t restored because of an error in EditLens. Try again.';
     return 'Could not restore: ' + (err && err.message ? err.message : 'unknown error');
   }
   // A file Claude created: Remove file deletes it (the live server keeps its text, so it can be undone).

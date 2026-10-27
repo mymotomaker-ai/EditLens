@@ -46,7 +46,7 @@ test('Tasks at once: whole numbers 1 to 8 (clamped), 4 for anything else, never 
   assert.ok(settings.PAGE_EDITABLE.includes('tasks_at_once'));
   const field = settings.describe(settings.normalize({})).find((f) => f.key === 'tasks_at_once');
   assert.deepStrictEqual([field.min, field.max, field.pageEditable], [1, 8, true]);
-  assert.match(field.description, /^Each running task adds about 0\.3–0\.5 GB of memory and uses your plan's limits in parallel\./);
+  assert.match(field.description, /^How many tasks from paired computers run on this computer at the same time, 1 to 8\. .*about 0\.3–0\.5 GB of memory/);
 });
 
 test('names: one line, no control characters, at most 60 characters; empty gives the own name back', () => {

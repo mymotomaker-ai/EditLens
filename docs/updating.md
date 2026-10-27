@@ -1,41 +1,57 @@
 # Install and update EditLens
 
-Install EditLens once from its marketplace, and update it the same way.
-
 ## Install
 
-```bash
-/plugin marketplace add mymotomaker-ai/editlens
-/plugin install editlens@editlens
-```
+1. In Claude Code, enter these two commands:
 
-Then restart Claude Code. Nothing else to set up: no npm packages, no project changes. Page control
-is the one exception: the first time you turn it on, it installs the Claude Agent SDK with npm (see
-[Page control](page-control.md)). To try EditLens without installing,
-start Claude Code with `claude --plugin-dir /path/to/editlens`.
+   ```bash
+   /plugin marketplace add mymotomaker-ai/editlens
+   /plugin install editlens@editlens
+   ```
+
+2. Restart Claude Code.
+
+You don't need to install anything else or change your project. The only exception is page control: the first time
+it turns on, it installs the Claude Agent SDK with npm. See [Page control](page-control.md#what-it-installs).
+
+To try EditLens without installing it, start Claude Code with `claude --plugin-dir /path/to/editlens`.
 
 ## Update
 
-```bash
-/plugin marketplace update editlens
-/plugin update editlens@editlens
-```
+1. In Claude Code, enter these two commands:
 
-Then restart Claude Code. Open pages show **Update ready** with a **Reload** button for the new panel.
+   ```bash
+   /plugin marketplace update editlens
+   /plugin update editlens@editlens
+   ```
 
-The running EditLens keeps going while page control runs, so an update never ends it. The line
-above the prompt and `/editlens details` then say "EditLens <new> is installed, but an older one
-(<old>) is still running". **`/editlens restart`** uses the new one immediately, then does what `/editlens` does: page control starts again in the same
-project, continuing the same page conversation, as soon as its page reconnects. Any page control that ended without you choosing it
-(EditLens restarted or updated, the Claude program it used was removed, Claude stopped) says why on
-the page and in Details; after a restart or an update it starts again automatically within 30 minutes.
-Manual that you chose is never undone.
+2. Restart Claude Code.
 
-On Windows, if the update says a folder is in use, stop the server and try again:
+Open pages show **Update ready** with a **Reload** button. Select it to load the new panel.
 
-```bash
-node "%USERPROFILE%\.claude\plugins\marketplaces\editlens\bin\stop.js"
-```
+### If page control is running
 
-If it still fails, close other Claude Code windows, or pull it directly with
-`git -C "%USERPROFILE%\.claude\plugins\marketplaces\editlens" pull` and run the update again.
+An update doesn't stop page control. The old version keeps running until you restart it. The line above the prompt
+and `/editlens details` show "EditLens <new> is installed, but an older one (<old>) is still running".
+
+To use the new version now, enter **`/editlens restart`**. Page control starts again in the same project, and
+continues the same page conversation when your page reconnects.
+
+If page control stopped without your choice, for example because of a restart or an update, the page and Details
+say why. After a restart or an update, it starts again by itself within 30 minutes. If you chose Manual, it stays
+Manual.
+
+## Fix an update problem on Windows
+
+If the update says a folder is in use:
+
+1. Stop the EditLens server:
+
+   ```bash
+   node "%USERPROFILE%\.claude\plugins\marketplaces\editlens\bin\stop.js"
+   ```
+
+2. Run the update again.
+
+If it still fails, close other Claude Code windows. Or update the files directly with
+`git -C "%USERPROFILE%\.claude\plugins\marketplaces\editlens" pull`, and then run the update again.

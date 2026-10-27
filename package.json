@@ -1,7 +1,7 @@
 {
   "name": "editlens",
   "version": "1.0.0",
-  "description": "Claude Code plugin: see Claude's edits on your page as they happen.",
+  "description": "Claude Code plugin: see each change Claude makes to your website, live.",
   "license": "MIT",
   "type": "commonjs",
   "engines": { "node": ">=18" },
